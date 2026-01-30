@@ -44,10 +44,14 @@ export function formatApplyResult(result: ApplyResult): string {
   return lines.join('\n');
 }
 
-export function runApply(cwd: string, options: { dryRun?: boolean } = {}): { output: string; exitCode: number } {
+export function runApply(cwd: string, options: { dryRun?: boolean; hook?: boolean } = {}): { output: string; exitCode: number } {
   const configPath = findConfigPath(cwd);
 
   if (!configPath) {
+    // In hook mode, no config is not an error - project doesn't use Fettle
+    if (options.hook) {
+      return { output: '', exitCode: 0 };
+    }
     return {
       output: 'No fettle.toml found. Run `fettle init` to create one.',
       exitCode: 1,

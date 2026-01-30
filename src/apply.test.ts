@@ -1,5 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { formatApplyResult, ApplyResult } from './apply.js';
+import { formatApplyResult, ApplyResult, runApply } from './apply.js';
+
+describe('runApply with hook mode', () => {
+  it('returns empty output when no config found', () => {
+    // runApply looks for .claude/fettle.toml in git root
+    // When run in a temp dir with no config, hook mode should be silent
+    const result = runApply('/tmp/nonexistent-project-dir', { hook: true });
+    expect(result.output).toBe('');
+    expect(result.exitCode).toBe(0);
+  });
+});
 
 describe('formatApplyResult', () => {
   it('formats successful installs', () => {
