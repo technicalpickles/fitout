@@ -1,8 +1,9 @@
 import { readFileSync } from 'node:fs';
-import { findConfigPath, resolveProjectRoot } from './context.js';
+import { findConfigPath, resolveProjectRoot, getProfilesDir } from './context.js';
 import { parseConfig, FettleConfig } from './config.js';
 import { listPlugins } from './claude.js';
-import { diffPlugins, PluginDiff, PluginDiffResolved } from './diff.js';
+import { diffPlugins, PluginDiff, PluginDiffResolved, diffPluginsResolved } from './diff.js';
+import { resolveProfiles } from './profiles.js';
 
 function formatProvenance(source: string): string {
   return source === 'project' ? '' : ` (from: ${source})`;
@@ -86,11 +87,22 @@ export function runStatus(cwd: string): { output: string; exitCode: number } {
     };
   }
 
+  // Resolve profiles
+  const profilesDir = getProfilesDir();
+  const resolution = resolveProfiles(profilesDir, config);
+
+  if (resolution.errors.length > 0) {
+    return {
+      output: `Profile errors:\n${resolution.errors.map((e) => `  ✗ ${e}`).join('\n')}`,
+      exitCode: 1,
+    };
+  }
+
   const installed = listPlugins();
-  const diff = diffPlugins(config.plugins, installed, projectRoot);
+  const diff = diffPluginsResolved(resolution.plugins, installed, projectRoot);
 
   return {
-    output: `Context: ${projectRoot}\n\n${formatStatus(diff)}`,
+    output: `Context: ${projectRoot}\n\n${formatStatusResolved(diff)}`,
     exitCode: diff.missing.length > 0 ? 1 : 0,
   };
 }
