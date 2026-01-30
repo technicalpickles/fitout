@@ -20,7 +20,20 @@ Fettle ensures your actual runtime state matches your declared configuration.
 ## Installation
 
 ```bash
+# Install globally
 npm install -g fettle
+
+# Set up Claude integration
+fettle init
+```
+
+This adds a SessionStart hook to Claude Code that automatically installs missing plugins when you start a session.
+
+### Non-interactive setup
+
+```bash
+fettle init --yes        # Use defaults (creates default profile)
+fettle init --hook-only  # Only add hook, no profile
 ```
 
 Requires [Claude Code CLI](https://claude.ai/docs/claude-code) to be installed.
