@@ -2,11 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { formatApplyResult, formatApplyResultHook, ApplyResult, runApply } from './apply.js';
 
 describe('runApply with hook mode', () => {
-  it('returns empty output when no config found', () => {
+  it('returns urgent message when no config found', () => {
     // runApply looks for .claude/fettle.toml in git root
-    // When run in a temp dir with no config, hook mode should be silent
+    // When run in a temp dir with no config, hook mode provides urgent context for Claude
     const result = runApply('/tmp/nonexistent-project-dir', { hook: true });
-    expect(result.output).toBe('');
+    expect(result.output).toContain('FETTLE NOT CONFIGURED');
+    expect(result.output).toContain('IMPORTANT');
+    expect(result.output).toContain('fettle init');
     expect(result.exitCode).toBe(0);
   });
 });
@@ -21,13 +23,19 @@ describe('formatApplyResultHook', () => {
     expect(formatApplyResultHook(result)).toBe('');
   });
 
-  it('returns restart message when plugins installed', () => {
+  it('returns Claude context when plugins installed', () => {
     const result: ApplyResult = {
       installed: ['plugin-a@registry', 'plugin-b@registry'],
       failed: [],
       alreadyPresent: [],
     };
-    expect(formatApplyResultHook(result)).toBe('Installed 2 plugins. Restart Claude to activate.');
+    const output = formatApplyResultHook(result);
+    expect(output).toContain('<system-reminder>');
+    expect(output).toContain('Fettle installed 2 plugins');
+    expect(output).toContain('plugin-a@registry');
+    expect(output).toContain('plugin-b@registry');
+    expect(output).toContain('restart Claude Code');
+    expect(output).toContain('fettle status');
   });
 
   it('uses singular for one plugin', () => {
@@ -36,7 +44,9 @@ describe('formatApplyResultHook', () => {
       failed: [],
       alreadyPresent: [],
     };
-    expect(formatApplyResultHook(result)).toBe('Installed 1 plugin. Restart Claude to activate.');
+    const output = formatApplyResultHook(result);
+    expect(output).toContain('Fettle installed 1 plugin for this project');
+    expect(output).not.toContain('1 plugins');
   });
 
   it('returns empty stdout and uses stderr for failures', () => {
@@ -57,7 +67,8 @@ describe('formatApplyResultHook', () => {
       alreadyPresent: [],
     };
     const formatted = formatApplyResultHook(result);
-    expect(formatted).toBe('Installed 1 plugin. Restart Claude to activate.');
+    expect(formatted).toContain('Fettle installed 1 plugin');
+    expect(formatted).toContain('good@registry');
   });
 });
 

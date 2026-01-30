@@ -19,7 +19,17 @@ export function formatApplyResultHook(result: ApplyResult): string {
   }
 
   const s = result.installed.length === 1 ? '' : 's';
-  return `Installed ${result.installed.length} plugin${s}. Restart Claude to activate.`;
+  const pluginList = result.installed.map((id) => `  - ${id}`).join('\n');
+
+  return [
+    '<system-reminder>',
+    `Fettle installed ${result.installed.length} plugin${s} for this project:`,
+    pluginList,
+    '',
+    'User should restart Claude Code to activate them.',
+    'User can run `fettle status` to see configured plugins.',
+    '</system-reminder>',
+  ].join('\n');
 }
 
 export function formatApplyResult(result: ApplyResult): string {
@@ -59,9 +69,18 @@ export function runApply(cwd: string, options: { dryRun?: boolean; hook?: boolea
   const configPath = findConfigPath(cwd);
 
   if (!configPath) {
-    // In hook mode, no config is not an error - project doesn't use Fettle
+    // In hook mode, provide urgent context for Claude about missing config
     if (options.hook) {
-      return { output: '', exitCode: 0 };
+      const message = [
+        '⚠️ FETTLE NOT CONFIGURED FOR THIS PROJECT ⚠️',
+        '',
+        'IMPORTANT: Before doing anything else, inform the user:',
+        '"I notice fettle (your plugin manager) isn\'t set up for this project.',
+        'Run `fettle init` to configure plugins, or create an empty .claude/fettle.toml to skip."',
+        '',
+        'This message will stop appearing once fettle is configured.',
+      ].join('\n');
+      return { output: message, exitCode: 0 };
     }
     return {
       output: 'No fettle.toml found. Run `fettle init` to create one.',
