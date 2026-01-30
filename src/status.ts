@@ -2,7 +2,38 @@ import { readFileSync } from 'node:fs';
 import { findConfigPath, resolveProjectRoot } from './context.js';
 import { parseConfig, FettleConfig } from './config.js';
 import { listPlugins } from './claude.js';
-import { diffPlugins, PluginDiff } from './diff.js';
+import { diffPlugins, PluginDiff, PluginDiffResolved } from './diff.js';
+
+function formatProvenance(source: string): string {
+  return source === 'project' ? '' : ` (from: ${source})`;
+}
+
+export function formatStatusResolved(diff: PluginDiffResolved): string {
+  const lines: string[] = [];
+
+  for (const plugin of diff.present) {
+    lines.push(`✓ ${plugin.id}${formatProvenance(plugin.source)}`);
+  }
+
+  for (const plugin of diff.missing) {
+    lines.push(`✗ ${plugin.id}${formatProvenance(plugin.source)} (missing)`);
+  }
+
+  for (const plugin of diff.extra) {
+    lines.push(`? ${plugin.id} (not in config)`);
+  }
+
+  const summary = [
+    diff.present.length > 0 ? `${diff.present.length} present` : null,
+    diff.missing.length > 0 ? `${diff.missing.length} missing` : null,
+    diff.extra.length > 0 ? `${diff.extra.length} extra` : null,
+  ].filter(Boolean).join(', ');
+
+  lines.push('');
+  lines.push(summary || 'No plugins configured');
+
+  return lines.join('\n');
+}
 
 export function formatStatus(diff: PluginDiff): string {
   const lines: string[] = [];
