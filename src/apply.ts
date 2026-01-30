@@ -11,6 +11,14 @@ export interface ApplyResult {
   alreadyPresent: string[];
 }
 
+export function formatApplyResultHook(result: ApplyResult): string {
+  if (result.installed.length === 0 && result.failed.length === 0) {
+    return '';
+  }
+  // TODO: handle installed case in next task
+  return '';
+}
+
 export function formatApplyResult(result: ApplyResult): string {
   const lines: string[] = [];
 

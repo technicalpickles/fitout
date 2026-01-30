@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatApplyResult, ApplyResult, runApply } from './apply.js';
+import { formatApplyResult, formatApplyResultHook, ApplyResult, runApply } from './apply.js';
 
 describe('runApply with hook mode', () => {
   it('returns empty output when no config found', () => {
@@ -8,6 +8,17 @@ describe('runApply with hook mode', () => {
     const result = runApply('/tmp/nonexistent-project-dir', { hook: true });
     expect(result.output).toBe('');
     expect(result.exitCode).toBe(0);
+  });
+});
+
+describe('formatApplyResultHook', () => {
+  it('returns empty string when nothing to do', () => {
+    const result: ApplyResult = {
+      installed: [],
+      failed: [],
+      alreadyPresent: ['plugin-a@registry'],
+    };
+    expect(formatApplyResultHook(result)).toBe('');
   });
 });
 
