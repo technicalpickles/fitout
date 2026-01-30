@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { findConfigPath, resolveProjectRoot } from './context.js';
-import { parseConfig } from './config.js';
+import { parseConfig, FettleConfig } from './config.js';
 import { listPlugins } from './claude.js';
 import { diffPlugins, PluginDiff } from './diff.js';
 
@@ -42,8 +42,19 @@ export function runStatus(cwd: string): { output: string; exitCode: number } {
   }
 
   const projectRoot = resolveProjectRoot(cwd);
-  const configContent = readFileSync(configPath, 'utf-8');
-  const config = parseConfig(configContent);
+
+  let configContent: string;
+  let config: FettleConfig;
+  try {
+    configContent = readFileSync(configPath, 'utf-8');
+    config = parseConfig(configContent);
+  } catch (err) {
+    return {
+      output: `Failed to read config: ${err instanceof Error ? err.message : 'Unknown error'}`,
+      exitCode: 1,
+    };
+  }
+
   const installed = listPlugins();
   const diff = diffPlugins(config.plugins, installed, projectRoot);
 
