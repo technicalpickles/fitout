@@ -1,4 +1,4 @@
-import { describe, it, expect, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { writeFileSync, unlinkSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { findConfigPath, resolveProjectRoot } from './context.js';
@@ -27,6 +27,15 @@ describe('resolveProjectRoot', () => {
 });
 
 describe('findConfigPath', () => {
+  // Create test config before tests that need it
+  beforeAll(() => {
+    const claudeDir = join(PROJECT_ROOT, '.claude');
+    if (!existsSync(claudeDir)) {
+      mkdirSync(claudeDir, { recursive: true });
+    }
+    writeFileSync(TEST_CONFIG_PATH, '# Test config\n');
+  });
+
   // Clean up test config file after all tests
   afterAll(() => {
     if (existsSync(TEST_CONFIG_PATH)) {
@@ -40,20 +49,11 @@ describe('findConfigPath', () => {
   });
 
   it('returns config path when config file exists', () => {
-    // Create test config file
-    const claudeDir = join(PROJECT_ROOT, '.claude');
-    if (!existsSync(claudeDir)) {
-      mkdirSync(claudeDir, { recursive: true });
-    }
-    writeFileSync(TEST_CONFIG_PATH, '# Test config\n');
-
     const result = findConfigPath(PROJECT_ROOT);
     expect(result).toBe(TEST_CONFIG_PATH);
   });
 
   it('finds config when searching from a subdirectory', () => {
-    // Config file should already exist from previous test
-    // Search from src/ subdirectory - should still find .claude/fettle.toml at project root
     const result = findConfigPath(join(PROJECT_ROOT, 'src'));
     expect(result).toBe(TEST_CONFIG_PATH);
   });
