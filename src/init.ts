@@ -29,3 +29,33 @@ export function hasFettleHook(settings: Record<string, unknown>): boolean {
     matcher.hooks?.some((hook) => hook.command?.includes('fettle apply --hook'))
   );
 }
+
+interface ClaudeSettings {
+  hooks?: {
+    SessionStart?: Array<{
+      hooks: Array<{ type: string; command: string }>;
+    }>;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+export function addFettleHook(settings: Record<string, unknown>): ClaudeSettings {
+  const result = { ...settings } as ClaudeSettings;
+
+  if (!result.hooks) {
+    result.hooks = {};
+  }
+
+  if (!result.hooks.SessionStart) {
+    result.hooks.SessionStart = [];
+  }
+
+  result.hooks.SessionStart.push({
+    hooks: [
+      { type: 'command', command: 'fettle apply --hook' }
+    ]
+  });
+
+  return result;
+}

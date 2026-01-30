@@ -1,6 +1,6 @@
 // src/init.test.ts
 import { describe, it, expect } from 'vitest';
-import { getClaudeSettingsPath, readClaudeSettings, hasFettleHook } from './init.js';
+import { getClaudeSettingsPath, readClaudeSettings, hasFettleHook, addFettleHook } from './init.js';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
@@ -67,5 +67,41 @@ describe('hasFettleHook', () => {
       }
     };
     expect(hasFettleHook(settings)).toBe(false);
+  });
+});
+
+describe('addFettleHook', () => {
+  it('creates hooks object if missing', () => {
+    const settings = {};
+    const result = addFettleHook(settings);
+    expect(result.hooks?.SessionStart).toBeDefined();
+  });
+
+  it('creates SessionStart array if missing', () => {
+    const settings = { hooks: {} };
+    const result = addFettleHook(settings);
+    expect(result.hooks?.SessionStart).toBeInstanceOf(Array);
+  });
+
+  it('appends to existing SessionStart hooks', () => {
+    const settings = {
+      hooks: {
+        SessionStart: [
+          { hooks: [{ type: 'command', command: 'echo existing' }] }
+        ]
+      }
+    };
+    const result = addFettleHook(settings);
+    expect(result.hooks?.SessionStart).toHaveLength(2);
+  });
+
+  it('adds the correct hook structure', () => {
+    const settings = {};
+    const result = addFettleHook(settings);
+    expect(result.hooks?.SessionStart?.[0]).toEqual({
+      hooks: [
+        { type: 'command', command: 'fettle apply --hook' }
+      ]
+    });
   });
 });
