@@ -125,6 +125,21 @@ export function runApply(cwd: string, options: { dryRun?: boolean; hook?: boolea
     }
   }
 
+  // At the end of runApply, replace the final return with:
+  if (options.hook) {
+    // In hook mode: stdout for success message, stderr for errors
+    if (result.failed.length > 0) {
+      return {
+        output: '',
+        exitCode: 1,
+      };
+    }
+    return {
+      output: formatApplyResultHook(result),
+      exitCode: 0,
+    };
+  }
+
   return {
     output: `Context: ${projectRoot}\n\n${formatApplyResult(result)}`,
     exitCode: result.failed.length > 0 ? 1 : 0,
