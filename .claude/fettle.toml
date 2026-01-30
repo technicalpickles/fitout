@@ -1,0 +1,3 @@
+plugins = [
+  "superpowers@superpowers-marketplace",
+]
