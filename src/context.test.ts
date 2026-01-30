@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { writeFileSync, unlinkSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { findConfigPath, resolveProjectRoot } from './context.js';
+import { homedir } from 'node:os';
+import { findConfigPath, resolveProjectRoot, getProfilesDir } from './context.js';
 
 // Use this project's directory as a test fixture (it's a real git repo)
 const PROJECT_ROOT = '/Users/josh.nichols/workspace/fettle';
@@ -56,5 +57,12 @@ describe('findConfigPath', () => {
   it('finds config when searching from a subdirectory', () => {
     const result = findConfigPath(join(PROJECT_ROOT, 'src'));
     expect(result).toBe(TEST_CONFIG_PATH);
+  });
+});
+
+describe('getProfilesDir', () => {
+  it('returns profiles directory under user config', () => {
+    const result = getProfilesDir();
+    expect(result).toBe(join(homedir(), '.config', 'fettle', 'profiles'));
   });
 });

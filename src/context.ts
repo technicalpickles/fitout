@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
+import { homedir } from 'node:os';
 
 export function resolveProjectRoot(cwd: string): string {
   try {
@@ -24,4 +25,8 @@ export function findConfigPath(startDir: string): string | null {
   }
 
   return null;
+}
+
+export function getProfilesDir(): string {
+  return join(homedir(), '.config', 'fettle', 'profiles');
 }
