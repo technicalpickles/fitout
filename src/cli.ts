@@ -21,9 +21,15 @@ program
   .command('apply')
   .description('Install missing plugins to sync desired state')
   .option('--dry-run', 'Show what would change without applying')
+  .option('--hook', 'Hook mode: silent on no-op, minimal output for Claude context')
   .action((options) => {
-    const { output, exitCode } = runApply(process.cwd(), { dryRun: options.dryRun });
-    console.log(output);
+    const { output, exitCode } = runApply(process.cwd(), {
+      dryRun: options.dryRun,
+      hook: options.hook,
+    });
+    if (output) {
+      console.log(output);
+    }
     process.exit(exitCode);
   });
 
