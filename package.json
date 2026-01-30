@@ -1,24 +1,23 @@
 {
   "name": "fettle",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "version": "0.1.0",
+  "description": "Context-aware plugin manager for Claude Code",
   "type": "module",
   "bin": {
     "fettle": "./dist/cli.js"
   },
-  "directories": {
-    "doc": "docs"
-  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
     "dev": "tsx src/cli.ts"
   },
-  "keywords": [],
+  "keywords": ["claude", "claude-code", "plugins", "cli"],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "commander": "^14.0.2",
     "smol-toml": "^1.6.0"
