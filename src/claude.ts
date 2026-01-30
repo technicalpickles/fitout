@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 
 export interface InstalledPlugin {
   id: string;
@@ -17,15 +17,14 @@ export function parsePluginList(jsonOutput: string): InstalledPlugin[] {
 }
 
 export function listPlugins(): InstalledPlugin[] {
-  const output = execSync('claude plugin list --json', {
+  const output = execFileSync('claude', ['plugin', 'list', '--json'], {
     encoding: 'utf-8',
-    stdio: ['pipe', 'pipe', 'pipe'],
   });
   return parsePluginList(output);
 }
 
 export function installPlugin(pluginId: string): void {
-  execSync(`claude plugin install ${pluginId} --scope local`, {
+  execFileSync('claude', ['plugin', 'install', pluginId, '--scope', 'local'], {
     encoding: 'utf-8',
     stdio: 'inherit',
   });
