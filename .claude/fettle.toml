@@ -1,0 +1,3 @@
+# Fettle project config
+profiles = ["superpowers"]
+plugins = []

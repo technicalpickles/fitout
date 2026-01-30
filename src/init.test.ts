@@ -1,6 +1,6 @@
 // src/init.test.ts
 import { describe, it, expect } from 'vitest';
-import { getClaudeSettingsPath, readClaudeSettings, hasFettleHook, addFettleHook, writeClaudeSettings, getDefaultProfilePath, createDefaultProfile } from './init.js';
+import { getClaudeSettingsPath, readClaudeSettings, hasFettleHook, addFettleHook, writeClaudeSettings, getDefaultProfilePath, createDefaultProfile, runInit, InitResult } from './init.js';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { mkdtempSync, writeFileSync, rmSync, readFileSync, existsSync } from 'node:fs';
@@ -164,6 +164,66 @@ describe('createDefaultProfile', () => {
 
     const content = readFileSync(profilePath, 'utf-8');
     expect(content).toBe('existing content');
+
+    rmSync(tmpDir, { recursive: true });
+  });
+});
+
+describe('runInit', () => {
+  it('returns already initialized when hook exists', () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'fettle-test-'));
+    const settingsPath = join(tmpDir, 'settings.json');
+    const profilesDir = join(tmpDir, 'profiles');
+
+    // Create settings with existing hook
+    writeFileSync(settingsPath, JSON.stringify({
+      hooks: {
+        SessionStart: [{
+          hooks: [{ type: 'command', command: 'fettle apply --hook' }]
+        }]
+      }
+    }));
+
+    const result = runInit({ settingsPath, profilesDir, createProfile: false });
+
+    expect(result.hookAdded).toBe(false);
+    expect(result.alreadyInitialized).toBe(true);
+
+    rmSync(tmpDir, { recursive: true });
+  });
+
+  it('adds hook when not present', () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'fettle-test-'));
+    const settingsPath = join(tmpDir, 'settings.json');
+    const profilesDir = join(tmpDir, 'profiles');
+
+    const result = runInit({ settingsPath, profilesDir, createProfile: false });
+
+    expect(result.hookAdded).toBe(true);
+    expect(result.alreadyInitialized).toBe(false);
+
+    // Verify settings file
+    const settings = JSON.parse(readFileSync(settingsPath, 'utf-8'));
+    expect(settings.hooks.SessionStart).toBeDefined();
+
+    rmSync(tmpDir, { recursive: true });
+  });
+
+  it('creates profile when requested', () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'fettle-test-'));
+    const settingsPath = join(tmpDir, 'settings.json');
+    const profilesDir = join(tmpDir, 'profiles');
+
+    const result = runInit({
+      settingsPath,
+      profilesDir,
+      createProfile: true,
+      profileName: 'default'
+    });
+
+    expect(result.profileCreated).toBe(true);
+    expect(result.profilePath).toBe(join(profilesDir, 'default.toml'));
+    expect(existsSync(result.profilePath!)).toBe(true);
 
     rmSync(tmpDir, { recursive: true });
   });

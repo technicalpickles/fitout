@@ -87,3 +87,49 @@ plugins = [
   writeFileSync(profilePath, content);
   return true;
 }
+
+export interface InitOptions {
+  settingsPath: string;
+  profilesDir: string;
+  createProfile: boolean;
+  profileName?: string;
+}
+
+export interface InitResult {
+  hookAdded: boolean;
+  alreadyInitialized: boolean;
+  profileCreated: boolean;
+  profilePath?: string;
+}
+
+export function runInit(options: InitOptions): InitResult {
+  const { settingsPath, profilesDir, createProfile, profileName = 'default' } = options;
+
+  const result: InitResult = {
+    hookAdded: false,
+    alreadyInitialized: false,
+    profileCreated: false,
+  };
+
+  // Read existing settings
+  const settings = readClaudeSettings(settingsPath);
+
+  // Check if already initialized
+  if (hasFettleHook(settings)) {
+    result.alreadyInitialized = true;
+  } else {
+    // Add hook
+    const updated = addFettleHook(settings);
+    writeClaudeSettings(settingsPath, updated);
+    result.hookAdded = true;
+  }
+
+  // Create profile if requested
+  if (createProfile) {
+    const profilePath = getDefaultProfilePath(profilesDir, profileName);
+    result.profilePath = profilePath;
+    result.profileCreated = createDefaultProfile(profilePath);
+  }
+
+  return result;
+}
