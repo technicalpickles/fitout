@@ -69,6 +69,32 @@ export function getDefaultProfilePath(profilesDir: string, name: string): string
   return join(profilesDir, `${name}.toml`);
 }
 
+export function getProjectConfigPath(projectRoot: string): string {
+  return join(projectRoot, '.claude', 'fettle.toml');
+}
+
+export function createProjectConfig(projectRoot: string, profileName?: string): boolean {
+  const configPath = getProjectConfigPath(projectRoot);
+
+  if (existsSync(configPath)) {
+    return false; // Already exists
+  }
+
+  mkdirSync(dirname(configPath), { recursive: true });
+
+  const profileLine = profileName ? `profiles = ["${profileName}"]` : '# profiles = ["default"]';
+  const content = `# Fettle project config - plugins listed here apply to this project
+${profileLine}
+
+plugins = [
+  # "example-plugin@marketplace",
+]
+`;
+
+  writeFileSync(configPath, content);
+  return true;
+}
+
 export function createDefaultProfile(profilePath: string): boolean {
   if (existsSync(profilePath)) {
     return false; // Already exists
@@ -93,6 +119,8 @@ export interface InitOptions {
   profilesDir: string;
   createProfile: boolean;
   profileName?: string;
+  projectRoot?: string;
+  createProjectConfig?: boolean;
 }
 
 export interface InitResult {
@@ -100,15 +128,25 @@ export interface InitResult {
   alreadyInitialized: boolean;
   profileCreated: boolean;
   profilePath?: string;
+  projectConfigCreated: boolean;
+  projectConfigPath?: string;
 }
 
 export function runInit(options: InitOptions): InitResult {
-  const { settingsPath, profilesDir, createProfile, profileName = 'default' } = options;
+  const {
+    settingsPath,
+    profilesDir,
+    createProfile,
+    profileName = 'default',
+    projectRoot,
+    createProjectConfig: shouldCreateProjectConfig,
+  } = options;
 
   const result: InitResult = {
     hookAdded: false,
     alreadyInitialized: false,
     profileCreated: false,
+    projectConfigCreated: false,
   };
 
   // Read existing settings
@@ -129,6 +167,15 @@ export function runInit(options: InitOptions): InitResult {
     const profilePath = getDefaultProfilePath(profilesDir, profileName);
     result.profilePath = profilePath;
     result.profileCreated = createDefaultProfile(profilePath);
+  }
+
+  // Create project config if requested
+  if (shouldCreateProjectConfig && projectRoot) {
+    result.projectConfigPath = getProjectConfigPath(projectRoot);
+    result.projectConfigCreated = createProjectConfig(
+      projectRoot,
+      createProfile ? profileName : undefined
+    );
   }
 
   return result;
