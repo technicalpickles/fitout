@@ -1,8 +1,9 @@
 import { readFileSync } from 'node:fs';
-import { findConfigPath, resolveProjectRoot } from './context.js';
+import { findConfigPath, resolveProjectRoot, getProfilesDir } from './context.js';
 import { parseConfig, FettleConfig } from './config.js';
 import { listPlugins, installPlugin } from './claude.js';
-import { diffPlugins } from './diff.js';
+import { diffPluginsResolved } from './diff.js';
+import { resolveProfiles } from './profiles.js';
 
 export interface ApplyResult {
   installed: string[];
@@ -65,8 +66,20 @@ export function runApply(cwd: string, options: { dryRun?: boolean } = {}): { out
       exitCode: 1,
     };
   }
+
+  // Resolve profiles
+  const profilesDir = getProfilesDir();
+  const resolution = resolveProfiles(profilesDir, config);
+
+  if (resolution.errors.length > 0) {
+    return {
+      output: `Profile errors:\n${resolution.errors.map((e) => `  ✗ ${e}`).join('\n')}`,
+      exitCode: 1,
+    };
+  }
+
   const installed = listPlugins();
-  const diff = diffPlugins(config.plugins, installed, projectRoot);
+  const diff = diffPluginsResolved(resolution.plugins, installed, projectRoot);
 
   if (options.dryRun) {
     if (diff.missing.length === 0) {
@@ -76,8 +89,8 @@ export function runApply(cwd: string, options: { dryRun?: boolean } = {}): { out
       };
     }
     const lines = [`Context: ${projectRoot}\n`, 'Would install:'];
-    for (const id of diff.missing) {
-      lines.push(`  + ${id}`);
+    for (const plugin of diff.missing) {
+      lines.push(`  + ${plugin.id}`);
     }
     return { output: lines.join('\n'), exitCode: 0 };
   }
@@ -88,12 +101,12 @@ export function runApply(cwd: string, options: { dryRun?: boolean } = {}): { out
     alreadyPresent: diff.present.map((p) => p.id),
   };
 
-  for (const id of diff.missing) {
+  for (const plugin of diff.missing) {
     try {
-      installPlugin(id);
-      result.installed.push(id);
+      installPlugin(plugin.id);
+      result.installed.push(plugin.id);
     } catch (err) {
-      result.failed.push({ id, error: err instanceof Error ? err.message : 'Unknown error' });
+      result.failed.push({ id: plugin.id, error: err instanceof Error ? err.message : 'Unknown error' });
     }
   }
 
