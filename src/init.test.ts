@@ -1,6 +1,6 @@
 // src/init.test.ts
 import { describe, it, expect } from 'vitest';
-import { getClaudeSettingsPath, readClaudeSettings } from './init.js';
+import { getClaudeSettingsPath, readClaudeSettings, hasFettleHook } from './init.js';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
@@ -27,5 +27,45 @@ describe('readClaudeSettings', () => {
     expect(settings).toEqual({ foo: 'bar' });
 
     rmSync(tmpDir, { recursive: true });
+  });
+});
+
+describe('hasFettleHook', () => {
+  it('returns false for empty settings', () => {
+    expect(hasFettleHook({})).toBe(false);
+  });
+
+  it('returns false for settings without hooks', () => {
+    expect(hasFettleHook({ env: {} })).toBe(false);
+  });
+
+  it('returns true when fettle hook exists', () => {
+    const settings = {
+      hooks: {
+        SessionStart: [
+          {
+            hooks: [
+              { type: 'command', command: 'fettle apply --hook' }
+            ]
+          }
+        ]
+      }
+    };
+    expect(hasFettleHook(settings)).toBe(true);
+  });
+
+  it('returns false for other SessionStart hooks', () => {
+    const settings = {
+      hooks: {
+        SessionStart: [
+          {
+            hooks: [
+              { type: 'command', command: 'echo hello' }
+            ]
+          }
+        ]
+      }
+    };
+    expect(hasFettleHook(settings)).toBe(false);
   });
 });
