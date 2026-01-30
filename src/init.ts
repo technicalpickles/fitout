@@ -64,3 +64,26 @@ export function writeClaudeSettings(path: string, settings: Record<string, unkno
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, JSON.stringify(settings, null, 2) + '\n');
 }
+
+export function getDefaultProfilePath(profilesDir: string, name: string): string {
+  return join(profilesDir, `${name}.toml`);
+}
+
+export function createDefaultProfile(profilePath: string): boolean {
+  if (existsSync(profilePath)) {
+    return false; // Already exists
+  }
+
+  mkdirSync(dirname(profilePath), { recursive: true });
+
+  const content = `# Fettle profile - plugins listed here apply to all projects
+# Add plugins in the format: "plugin-name@registry"
+
+plugins = [
+  # "example-plugin@marketplace",
+]
+`;
+
+  writeFileSync(profilePath, content);
+  return true;
+}

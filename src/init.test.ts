@@ -1,9 +1,9 @@
 // src/init.test.ts
 import { describe, it, expect } from 'vitest';
-import { getClaudeSettingsPath, readClaudeSettings, hasFettleHook, addFettleHook, writeClaudeSettings } from './init.js';
+import { getClaudeSettingsPath, readClaudeSettings, hasFettleHook, addFettleHook, writeClaudeSettings, getDefaultProfilePath, createDefaultProfile } from './init.js';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { mkdtempSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, rmSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 
 describe('getClaudeSettingsPath', () => {
@@ -127,6 +127,43 @@ describe('writeClaudeSettings', () => {
 
     const content = readFileSync(settingsPath, 'utf-8');
     expect(content).toContain('foo');
+
+    rmSync(tmpDir, { recursive: true });
+  });
+});
+
+describe('getDefaultProfilePath', () => {
+  it('returns path to default profile', () => {
+    const profilesDir = '/some/profiles/dir';
+    expect(getDefaultProfilePath(profilesDir, 'default')).toBe('/some/profiles/dir/default.toml');
+  });
+});
+
+describe('createDefaultProfile', () => {
+  it('creates profile file with comment header', () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'fettle-test-'));
+    const profilePath = join(tmpDir, 'default.toml');
+
+    createDefaultProfile(profilePath);
+
+    expect(existsSync(profilePath)).toBe(true);
+    const content = readFileSync(profilePath, 'utf-8');
+    expect(content).toContain('plugins');
+
+    rmSync(tmpDir, { recursive: true });
+  });
+
+  it('does not overwrite existing profile', () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'fettle-test-'));
+    const profilePath = join(tmpDir, 'default.toml');
+
+    // Create existing profile
+    writeFileSync(profilePath, 'existing content');
+
+    createDefaultProfile(profilePath);
+
+    const content = readFileSync(profilePath, 'utf-8');
+    expect(content).toBe('existing content');
 
     rmSync(tmpDir, { recursive: true });
   });
