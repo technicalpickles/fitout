@@ -2,6 +2,7 @@ import { parse } from 'smol-toml';
 
 export interface FettleConfig {
   plugins: string[];
+  profiles: string[];
 }
 
 export function parseConfig(tomlContent: string): FettleConfig {
@@ -11,5 +12,9 @@ export function parseConfig(tomlContent: string): FettleConfig {
     ? parsed.plugins.filter((p): p is string => typeof p === 'string')
     : [];
 
-  return { plugins };
+  const profiles = Array.isArray(parsed.profiles)
+    ? parsed.profiles.filter((p): p is string => typeof p === 'string')
+    : [];
+
+  return { plugins, profiles };
 }

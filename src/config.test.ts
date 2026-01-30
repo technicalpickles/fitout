@@ -27,3 +27,20 @@ plugins = [
     expect(() => parseConfig(toml)).toThrow();
   });
 });
+
+describe('parseConfig profiles field', () => {
+  it('parses profiles array', () => {
+    const toml = `
+profiles = ["default", "backend"]
+plugins = ["some-plugin@registry"]
+`;
+    const result = parseConfig(toml);
+    expect(result.profiles).toEqual(['default', 'backend']);
+  });
+
+  it('returns empty array for missing profiles', () => {
+    const toml = `plugins = ["some-plugin@registry"]`;
+    const result = parseConfig(toml);
+    expect(result.profiles).toEqual([]);
+  });
+});
