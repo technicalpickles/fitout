@@ -12,16 +12,14 @@ export interface ApplyResult {
 }
 
 export function formatApplyResultHook(result: ApplyResult): string {
-  if (result.installed.length === 0 && result.failed.length === 0) {
+  if (result.installed.length === 0) {
+    // Nothing installed - either nothing to do or all failed
+    // Failures go to stderr, so stdout is empty
     return '';
   }
 
-  if (result.installed.length > 0 && result.failed.length === 0) {
-    const s = result.installed.length === 1 ? '' : 's';
-    return `Installed ${result.installed.length} plugin${s}. Restart Claude to activate.`;
-  }
-
-  return '';
+  const s = result.installed.length === 1 ? '' : 's';
+  return `Installed ${result.installed.length} plugin${s}. Restart Claude to activate.`;
 }
 
 export function formatApplyResult(result: ApplyResult): string {

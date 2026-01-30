@@ -38,6 +38,27 @@ describe('formatApplyResultHook', () => {
     };
     expect(formatApplyResultHook(result)).toBe('Installed 1 plugin. Restart Claude to activate.');
   });
+
+  it('returns empty stdout and uses stderr for failures', () => {
+    const result: ApplyResult = {
+      installed: [],
+      failed: [{ id: 'bad@registry', error: 'not found' }],
+      alreadyPresent: [],
+    };
+    const formatted = formatApplyResultHook(result);
+    // In hook mode, failures go to stderr, stdout stays empty
+    expect(formatted).toBe('');
+  });
+
+  it('reports installs even when some fail', () => {
+    const result: ApplyResult = {
+      installed: ['good@registry'],
+      failed: [{ id: 'bad@registry', error: 'not found' }],
+      alreadyPresent: [],
+    };
+    const formatted = formatApplyResultHook(result);
+    expect(formatted).toBe('Installed 1 plugin. Restart Claude to activate.');
+  });
 });
 
 describe('formatApplyResult', () => {
