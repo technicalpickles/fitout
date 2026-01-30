@@ -15,7 +15,12 @@ export function formatApplyResultHook(result: ApplyResult): string {
   if (result.installed.length === 0 && result.failed.length === 0) {
     return '';
   }
-  // TODO: handle installed case in next task
+
+  if (result.installed.length > 0 && result.failed.length === 0) {
+    const s = result.installed.length === 1 ? '' : 's';
+    return `Installed ${result.installed.length} plugin${s}. Restart Claude to activate.`;
+  }
+
   return '';
 }
 

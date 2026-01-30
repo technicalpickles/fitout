@@ -20,6 +20,24 @@ describe('formatApplyResultHook', () => {
     };
     expect(formatApplyResultHook(result)).toBe('');
   });
+
+  it('returns restart message when plugins installed', () => {
+    const result: ApplyResult = {
+      installed: ['plugin-a@registry', 'plugin-b@registry'],
+      failed: [],
+      alreadyPresent: [],
+    };
+    expect(formatApplyResultHook(result)).toBe('Installed 2 plugins. Restart Claude to activate.');
+  });
+
+  it('uses singular for one plugin', () => {
+    const result: ApplyResult = {
+      installed: ['plugin-a@registry'],
+      failed: [],
+      alreadyPresent: [],
+    };
+    expect(formatApplyResultHook(result)).toBe('Installed 1 plugin. Restart Claude to activate.');
+  });
 });
 
 describe('formatApplyResult', () => {
