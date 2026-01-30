@@ -1,9 +1,9 @@
 // src/init.test.ts
 import { describe, it, expect } from 'vitest';
-import { getClaudeSettingsPath, readClaudeSettings, hasFettleHook, addFettleHook } from './init.js';
+import { getClaudeSettingsPath, readClaudeSettings, hasFettleHook, addFettleHook, writeClaudeSettings } from './init.js';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 
 describe('getClaudeSettingsPath', () => {
@@ -103,5 +103,31 @@ describe('addFettleHook', () => {
         { type: 'command', command: 'fettle apply --hook' }
       ]
     });
+  });
+});
+
+describe('writeClaudeSettings', () => {
+  it('writes JSON with 2-space indentation', () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'fettle-test-'));
+    const settingsPath = join(tmpDir, 'settings.json');
+
+    writeClaudeSettings(settingsPath, { foo: 'bar' });
+
+    const content = readFileSync(settingsPath, 'utf-8');
+    expect(content).toBe('{\n  "foo": "bar"\n}\n');
+
+    rmSync(tmpDir, { recursive: true });
+  });
+
+  it('creates parent directories if needed', () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'fettle-test-'));
+    const settingsPath = join(tmpDir, 'nested', 'dir', 'settings.json');
+
+    writeClaudeSettings(settingsPath, { foo: 'bar' });
+
+    const content = readFileSync(settingsPath, 'utf-8');
+    expect(content).toContain('foo');
+
+    rmSync(tmpDir, { recursive: true });
   });
 });

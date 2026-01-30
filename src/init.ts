@@ -1,7 +1,7 @@
 // src/init.ts
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
 import { homedir } from 'node:os';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
 
 export function getClaudeSettingsPath(): string {
   return join(homedir(), '.claude', 'settings.json');
@@ -58,4 +58,9 @@ export function addFettleHook(settings: Record<string, unknown>): ClaudeSettings
   });
 
   return result;
+}
+
+export function writeClaudeSettings(path: string, settings: Record<string, unknown>): void {
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, JSON.stringify(settings, null, 2) + '\n');
 }
