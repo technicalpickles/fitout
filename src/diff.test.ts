@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { diffPlugins, PluginDiff } from './diff.js';
+import { diffPlugins, diffPluginsResolved, PluginDiff, PluginDiffResolved } from './diff.js';
+import { ResolvedPlugin } from './profiles.js';
 import { InstalledPlugin } from './claude.js';
 
 describe('diffPlugins', () => {
@@ -46,5 +47,39 @@ describe('diffPlugins', () => {
 
     const diff = diffPlugins(desired, installed, projectPath);
     expect(diff.missing).toEqual(['plugin-a@registry']);
+  });
+});
+
+describe('diffPluginsResolved', () => {
+  const projectPath = '/test/project';
+
+  it('tracks provenance for missing plugins', () => {
+    const desired: ResolvedPlugin[] = [
+      { id: 'plugin-a@registry', source: 'default' },
+      { id: 'plugin-b@registry', source: 'project' },
+    ];
+    const installed: InstalledPlugin[] = [];
+
+    const result = diffPluginsResolved(desired, installed, projectPath);
+
+    expect(result.missing).toEqual([
+      { id: 'plugin-a@registry', source: 'default' },
+      { id: 'plugin-b@registry', source: 'project' },
+    ]);
+  });
+
+  it('tracks provenance for present plugins', () => {
+    const desired: ResolvedPlugin[] = [
+      { id: 'plugin-a@registry', source: 'backend' },
+    ];
+    const installed: InstalledPlugin[] = [
+      { id: 'plugin-a@registry', version: '1.0', scope: 'local', enabled: true, projectPath },
+    ];
+
+    const result = diffPluginsResolved(desired, installed, projectPath);
+
+    expect(result.present).toEqual([
+      expect.objectContaining({ id: 'plugin-a@registry', source: 'backend' }),
+    ]);
   });
 });
