@@ -85,7 +85,7 @@ describe('formatApplyResult', () => {
     expect(output).toContain('1 plugin installed');
   });
 
-  it('formats nothing to do', () => {
+  it('formats all present message', () => {
     const result: ApplyResult = {
       installed: [],
       failed: [],
@@ -93,7 +93,7 @@ describe('formatApplyResult', () => {
     };
 
     const output = formatApplyResult(result);
-    expect(output).toContain('Nothing to do');
+    expect(output).toContain('All 1 plugins present');
   });
 
   it('formats failures', () => {

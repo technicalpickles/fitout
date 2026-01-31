@@ -37,7 +37,7 @@ export function formatApplyResult(result: ApplyResult): string {
   const lines: string[] = [];
 
   if (result.installed.length === 0 && result.failed.length === 0) {
-    lines.push(`Nothing to do. ${result.alreadyPresent.length} plugins already installed.`);
+    lines.push(`${symbols.present} ${colors.success(`All ${result.alreadyPresent.length} plugins present`)}`);
     return lines.join('\n');
   }
 
@@ -120,7 +120,7 @@ export function runApply(cwd: string, options: { dryRun?: boolean; hook?: boolea
   if (options.dryRun) {
     if (diff.missing.length === 0) {
       return {
-        output: `${colors.header('Context:')} ${projectRoot}\n\nNothing to do. ${diff.present.length} plugins already installed.`,
+        output: `${colors.header('Context:')} ${projectRoot}\n\n${symbols.present} ${colors.success(`All ${diff.present.length} plugins present`)}`,
         exitCode: 0,
       };
     }
