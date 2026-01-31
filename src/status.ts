@@ -4,30 +4,33 @@ import { parseConfig, FettleConfig } from './config.js';
 import { listPlugins } from './claude.js';
 import { diffPlugins, PluginDiff, PluginDiffResolved, diffPluginsResolved } from './diff.js';
 import { resolveProfiles } from './profiles.js';
+import { colors, symbols, provenanceColor } from './colors.js';
 
 function formatProvenance(source: string): string {
-  return source === 'project' ? '' : ` (from: ${source})`;
+  if (source === 'project') return '';
+  const colorFn = provenanceColor(source);
+  return ' ' + colorFn(`(from: ${source})`);
 }
 
 export function formatStatusResolved(diff: PluginDiffResolved): string {
   const lines: string[] = [];
 
   for (const plugin of diff.present) {
-    lines.push(`✓ ${plugin.id}${formatProvenance(plugin.source)}`);
+    lines.push(`${symbols.present} ${plugin.id}${formatProvenance(plugin.source)}`);
   }
 
   for (const plugin of diff.missing) {
-    lines.push(`✗ ${plugin.id}${formatProvenance(plugin.source)} (missing)`);
+    lines.push(`${symbols.missing} ${plugin.id}${formatProvenance(plugin.source)} ${colors.error('(missing)')}`);
   }
 
   for (const plugin of diff.extra) {
-    lines.push(`? ${plugin.id} (not in config)`);
+    lines.push(`${symbols.extra} ${plugin.id} ${colors.warning('(not in config)')}`);
   }
 
   const summary = [
-    diff.present.length > 0 ? `${diff.present.length} present` : null,
-    diff.missing.length > 0 ? `${diff.missing.length} missing` : null,
-    diff.extra.length > 0 ? `${diff.extra.length} extra` : null,
+    diff.present.length > 0 ? colors.success(`${diff.present.length} present`) : null,
+    diff.missing.length > 0 ? colors.error(`${diff.missing.length} missing`) : null,
+    diff.extra.length > 0 ? colors.warning(`${diff.extra.length} extra`) : null,
   ].filter(Boolean).join(', ');
 
   lines.push('');
@@ -40,21 +43,21 @@ export function formatStatus(diff: PluginDiff): string {
   const lines: string[] = [];
 
   for (const plugin of diff.present) {
-    lines.push(`✓ ${plugin.id}`);
+    lines.push(`${symbols.present} ${plugin.id}`);
   }
 
   for (const id of diff.missing) {
-    lines.push(`✗ ${id} (missing)`);
+    lines.push(`${symbols.missing} ${id} ${colors.error('(missing)')}`);
   }
 
   for (const plugin of diff.extra) {
-    lines.push(`? ${plugin.id} (not in config)`);
+    lines.push(`${symbols.extra} ${plugin.id} ${colors.warning('(not in config)')}`);
   }
 
   const summary = [
-    diff.present.length > 0 ? `${diff.present.length} present` : null,
-    diff.missing.length > 0 ? `${diff.missing.length} missing` : null,
-    diff.extra.length > 0 ? `${diff.extra.length} extra` : null,
+    diff.present.length > 0 ? colors.success(`${diff.present.length} present`) : null,
+    diff.missing.length > 0 ? colors.error(`${diff.missing.length} missing`) : null,
+    diff.extra.length > 0 ? colors.warning(`${diff.extra.length} extra`) : null,
   ].filter(Boolean).join(', ');
 
   lines.push('');
@@ -93,7 +96,7 @@ export function runStatus(cwd: string): { output: string; exitCode: number } {
 
   if (resolution.errors.length > 0) {
     return {
-      output: `Profile errors:\n${resolution.errors.map((e) => `  ✗ ${e}`).join('\n')}`,
+      output: `${colors.header('Profile errors:')}\n${resolution.errors.map((e) => `  ${symbols.missing} ${e}`).join('\n')}`,
       exitCode: 1,
     };
   }
@@ -102,7 +105,7 @@ export function runStatus(cwd: string): { output: string; exitCode: number } {
   const diff = diffPluginsResolved(resolution.plugins, installed, projectRoot);
 
   return {
-    output: `Context: ${projectRoot}\n\n${formatStatusResolved(diff)}`,
+    output: `${colors.header('Context:')} ${projectRoot}\n\n${formatStatusResolved(diff)}`,
     exitCode: diff.missing.length > 0 ? 1 : 0,
   };
 }

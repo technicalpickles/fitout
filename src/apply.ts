@@ -4,6 +4,7 @@ import { parseConfig, FettleConfig } from './config.js';
 import { listPlugins, installPlugin } from './claude.js';
 import { diffPluginsResolved } from './diff.js';
 import { resolveProfiles } from './profiles.js';
+import { colors, symbols } from './colors.js';
 
 export interface ApplyResult {
   installed: string[];
@@ -41,22 +42,23 @@ export function formatApplyResult(result: ApplyResult): string {
   }
 
   if (result.installed.length > 0) {
-    lines.push('Installed:');
+    lines.push(colors.header('Installed:'));
     for (const id of result.installed) {
-      lines.push(`  + ${id}`);
+      lines.push(`  ${symbols.install} ${id}`);
     }
   }
 
   if (result.failed.length > 0) {
-    lines.push('Failed:');
+    if (result.installed.length > 0) lines.push('');
+    lines.push(colors.header('Failed:'));
     for (const { id, error } of result.failed) {
-      lines.push(`  ✗ ${id} - ${error}`);
+      lines.push(`  ${symbols.missing} ${id} ${colors.dim(`- ${error}`)}`);
     }
   }
 
   const summary = [
-    result.installed.length > 0 ? `${result.installed.length} plugin${result.installed.length > 1 ? 's' : ''} installed` : null,
-    result.failed.length > 0 ? `${result.failed.length} failed` : null,
+    result.installed.length > 0 ? colors.action(`${result.installed.length} plugin${result.installed.length > 1 ? 's' : ''} installed`) : null,
+    result.failed.length > 0 ? colors.error(`${result.failed.length} failed`) : null,
   ].filter(Boolean).join(', ');
 
   lines.push('');
@@ -107,7 +109,7 @@ export function runApply(cwd: string, options: { dryRun?: boolean; hook?: boolea
 
   if (resolution.errors.length > 0) {
     return {
-      output: `Profile errors:\n${resolution.errors.map((e) => `  ✗ ${e}`).join('\n')}`,
+      output: `${colors.header('Profile errors:')}\n${resolution.errors.map((e) => `  ${symbols.missing} ${e}`).join('\n')}`,
       exitCode: 1,
     };
   }
@@ -118,13 +120,13 @@ export function runApply(cwd: string, options: { dryRun?: boolean; hook?: boolea
   if (options.dryRun) {
     if (diff.missing.length === 0) {
       return {
-        output: `Context: ${projectRoot}\n\nNothing to do. ${diff.present.length} plugins already installed.`,
+        output: `${colors.header('Context:')} ${projectRoot}\n\nNothing to do. ${diff.present.length} plugins already installed.`,
         exitCode: 0,
       };
     }
-    const lines = [`Context: ${projectRoot}\n`, 'Would install:'];
+    const lines = [`${colors.header('Context:')} ${projectRoot}\n`, colors.header('Would install:')];
     for (const plugin of diff.missing) {
-      lines.push(`  + ${plugin.id}`);
+      lines.push(`  ${symbols.install} ${plugin.id}`);
     }
     return { output: lines.join('\n'), exitCode: 0 };
   }
@@ -160,7 +162,7 @@ export function runApply(cwd: string, options: { dryRun?: boolean; hook?: boolea
   }
 
   return {
-    output: `Context: ${projectRoot}\n\n${formatApplyResult(result)}`,
+    output: `${colors.header('Context:')} ${projectRoot}\n\n${formatApplyResult(result)}`,
     exitCode: result.failed.length > 0 ? 1 : 0,
   };
 }

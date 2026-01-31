@@ -5,6 +5,7 @@ import { runApply } from './apply.js';
 import { runInit, getClaudeSettingsPath, getProjectConfigPath } from './init.js';
 import { getProfilesDir, resolveProjectRoot } from './context.js';
 import { confirm, input } from './prompt.js';
+import { colors, symbols } from './colors.js';
 
 program
   .name('fettle')
@@ -87,28 +88,28 @@ program
       process.exit(0);
     }
 
-    console.log('\nCreated:');
+    console.log(`\n${colors.header('Created:')}`);
     if (result.hookAdded) {
-      console.log(`  ✓ SessionStart hook added to ${settingsPath}`);
+      console.log(`  ${symbols.present} SessionStart hook added to ${settingsPath}`);
     }
     if (result.profileCreated) {
-      console.log(`  ✓ ${result.profilePath}`);
+      console.log(`  ${symbols.present} ${result.profilePath}`);
     }
     if (result.projectConfigCreated) {
-      console.log(`  ✓ ${result.projectConfigPath}`);
+      console.log(`  ${symbols.present} ${result.projectConfigPath}`);
     }
     if (result.alreadyInitialized) {
-      console.log('  (hook already existed)');
+      console.log(colors.dim('  (hook already existed)'));
     }
 
-    console.log('\nNext steps:');
+    console.log(`\n${colors.header('Next steps:')}`);
     if (result.profileCreated) {
-      console.log(`  - Add plugins to your profile: ${result.profilePath}`);
+      console.log(`  ${colors.dim('-')} Add plugins to your profile: ${result.profilePath}`);
     }
     if (result.projectConfigCreated) {
-      console.log(`  - Add plugins to your project config: ${result.projectConfigPath}`);
+      console.log(`  ${colors.dim('-')} Add plugins to your project config: ${result.projectConfigPath}`);
     }
-    console.log('  - Restart Claude to activate the hook');
+    console.log(`  ${colors.dim('-')} Restart Claude to activate the hook`);
 
     process.exit(0);
   });
