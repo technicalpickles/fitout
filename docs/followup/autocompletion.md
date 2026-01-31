@@ -1,6 +1,8 @@
 # Shell Autocompletion
 
-Add shell autocompletion for fettle commands and arguments.
+**Status: Implemented**
+
+Shell autocompletion for fettle commands and arguments using `@pnpm/tabtab`.
 
 ## What to Complete
 
@@ -111,19 +113,36 @@ program
   });
 ```
 
-## Recommendation
+## Implementation
 
-Start with **Option A** (Commander.js built-in) for simplicity:
+Used **@pnpm/tabtab** (maintained fork of tabtab by pnpm team):
 
-1. Add `fettle completion <shell>` command
-2. Add hidden `fettle _complete-plugins` for dynamic completions
-3. Document installation in README
+```bash
+# Install completions (prompts for shell if not specified)
+fettle completion install [bash|zsh|fish|pwsh]
 
-This keeps dependencies minimal and follows CLI conventions.
+# Remove completions
+fettle completion uninstall
+```
+
+### Files
+
+- `src/completion.ts` - Completion logic and tabtab integration
+- `src/completion.test.ts` - Tests
+
+### How It Works
+
+1. At CLI startup, `handleCompletion()` checks if we're in completion mode via `tabtab.parseEnv()`
+2. If completing, returns appropriate completions based on context (commands, flags, subcommands, plugin IDs)
+3. Users install completions via `fettle completion install` which adds sourcing to shell config
+
+### Dynamic Completions
+
+Plugin IDs for `fettle update <plugin>` shows only outdated plugins (compares installed versions against marketplace data). Falls back to all installed plugins if marketplace data isn't cached.
 
 ## References
 
-- [Commander.js completion](https://github.com/commander-js/extra-typings)
-- [tabtab](https://github.com/mklabs/tabtab)
+- [@pnpm/tabtab](https://github.com/pnpm/tabtab) - Maintained fork used in this implementation
+- [tabtab](https://github.com/mklabs/tabtab) - Original package
 - [Bash completion tutorial](https://iridakos.com/programming/2018/03/01/bash-programmable-completion-tutorial)
 - [Zsh completion guide](https://github.com/zsh-users/zsh-completions/blob/master/zsh-completions-howto.org)

@@ -9,6 +9,13 @@ import { colors, symbols } from './colors.js';
 import { refreshMarketplaces, listAvailablePlugins } from './marketplace.js';
 import { runUpdate, updatePlugin } from './update.js';
 import { listPlugins } from './claude.js';
+import { handleCompletion, installCompletion, uninstallCompletion } from './completion.js';
+import type { SupportedShell } from '@pnpm/tabtab';
+
+// Handle shell completion requests before command parsing
+if (handleCompletion()) {
+  process.exit(0);
+}
 
 program
   .name('fettle')
@@ -177,6 +184,41 @@ program
     console.log(`  ${colors.dim('-')} Restart Claude to activate the hook`);
 
     process.exit(0);
+  });
+
+// Completion subcommands
+const completion = program
+  .command('completion')
+  .description('Manage shell completions');
+
+completion
+  .command('install')
+  .description('Install shell completions')
+  .argument('[shell]', 'Shell type: bash, zsh, fish, or pwsh (prompts if not specified)')
+  .action(async (shell: SupportedShell | undefined) => {
+    try {
+      await installCompletion(shell);
+      console.log(`${symbols.present} Shell completions installed`);
+      console.log(colors.dim('  Restart your shell or source your config to activate'));
+      process.exit(0);
+    } catch (err) {
+      console.error(`Failed to install completions: ${err}`);
+      process.exit(1);
+    }
+  });
+
+completion
+  .command('uninstall')
+  .description('Remove shell completions')
+  .action(async () => {
+    try {
+      await uninstallCompletion();
+      console.log(`${symbols.present} Shell completions removed`);
+      process.exit(0);
+    } catch (err) {
+      console.error(`Failed to uninstall completions: ${err}`);
+      process.exit(1);
+    }
   });
 
 program.parse();
