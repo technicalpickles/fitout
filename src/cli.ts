@@ -6,6 +6,9 @@ import { runInit, getClaudeSettingsPath, getProjectConfigPath } from './init.js'
 import { getProfilesDir, resolveProjectRoot } from './context.js';
 import { confirm, input } from './prompt.js';
 import { colors, symbols } from './colors.js';
+import { refreshMarketplaces, listAvailablePlugins } from './marketplace.js';
+import { runUpdate, updatePlugin } from './update.js';
+import { listPlugins } from './claude.js';
 
 program
   .name('fettle')
@@ -15,8 +18,11 @@ program
 program
   .command('status')
   .description('Show desired vs actual plugin state')
-  .action(() => {
-    const { output, exitCode } = runStatus(process.cwd());
+  .option('--refresh', 'Refresh marketplace data before checking')
+  .action((options) => {
+    const { output, exitCode } = runStatus(process.cwd(), {
+      refresh: options.refresh,
+    });
     console.log(output);
     process.exit(exitCode);
   });
@@ -35,6 +41,65 @@ program
       console.log(output);
     }
     process.exit(exitCode);
+  });
+
+program
+  .command('update [plugins...]')
+  .description('Update outdated plugins (all if no plugins specified)')
+  .option('--refresh', 'Refresh marketplace data before updating')
+  .option('--dry-run', 'Show what would be updated without applying')
+  .action((plugins, options) => {
+    const projectRoot = resolveProjectRoot(process.cwd());
+
+    if (options.refresh) {
+      console.log('Refreshing marketplaces...');
+      refreshMarketplaces();
+    }
+
+    const installed = listPlugins();
+    const available = listAvailablePlugins();
+
+    const result = runUpdate(projectRoot, installed, available, plugins, {
+      dryRun: options.dryRun,
+    });
+
+    if (result.output) {
+      console.log(result.output);
+    }
+
+    if (result.exitCode !== 0) {
+      process.exit(result.exitCode);
+    }
+
+    // Perform actual updates
+    if (result.pluginsToUpdate.length > 0) {
+      for (const plugin of result.pluginsToUpdate) {
+        console.log(`  ${symbols.outdated} ${plugin.id} v${plugin.installedVersion} → v${plugin.availableVersion}`);
+        updatePlugin(plugin.id);
+      }
+
+      console.log('');
+      console.log(
+        `Updated ${result.pluginsToUpdate.length} plugin${result.pluginsToUpdate.length > 1 ? 's' : ''}. Restart Claude to apply changes.`
+      );
+    }
+
+    process.exit(0);
+  });
+
+// Marketplace subcommands
+const marketplace = program
+  .command('marketplace')
+  .description('Manage Claude Code marketplaces');
+
+marketplace
+  .command('refresh')
+  .description('Update marketplace data from sources')
+  .action(() => {
+    console.log('Refreshing marketplaces...');
+    refreshMarketplaces();
+    console.log(`${symbols.present} Marketplaces updated`);
+    process.exit(0);
   });
 
 program

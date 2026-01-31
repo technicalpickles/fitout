@@ -22,6 +22,7 @@ export const symbols = {
   missing: colors.error('✗'),
   extra: colors.warning('?'),
   install: colors.action('+'),
+  outdated: colors.warning('↑'),
 };
 
 export function provenanceColor(source: string): (text: string) => string {

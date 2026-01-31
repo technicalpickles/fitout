@@ -1,10 +1,16 @@
 import { readFileSync } from 'node:fs';
 import { findConfigPath, resolveProjectRoot, getProfilesDir } from './context.js';
 import { parseConfig, FettleConfig } from './config.js';
-import { listPlugins } from './claude.js';
+import { listPlugins, InstalledPlugin } from './claude.js';
 import { diffPlugins, PluginDiff, PluginDiffResolved, diffPluginsResolved } from './diff.js';
 import { resolveProfiles } from './profiles.js';
 import { colors, symbols, provenanceColor } from './colors.js';
+import { listAvailablePlugins, refreshMarketplaces } from './marketplace.js';
+import { findOutdatedPlugins, OutdatedPlugin } from './update.js';
+
+export interface StatusOptions {
+  refresh?: boolean;
+}
 
 function formatProvenance(source: string): string {
   if (source === 'project') return '';
@@ -12,11 +18,23 @@ function formatProvenance(source: string): string {
   return ' ' + colorFn(`(from: ${source})`);
 }
 
-export function formatStatusResolved(diff: PluginDiffResolved): string {
+export interface StatusDiff extends PluginDiffResolved {
+  outdated: OutdatedPlugin[];
+}
+
+export function formatStatusResolved(diff: StatusDiff, showRefreshTip: boolean): string {
   const lines: string[] = [];
+  const outdatedIds = new Set(diff.outdated.map((p) => p.id));
 
   for (const plugin of diff.present) {
-    lines.push(`${symbols.present} ${plugin.id}${formatProvenance(plugin.source)}`);
+    const outdated = diff.outdated.find((o) => o.id === plugin.id);
+    if (outdated) {
+      lines.push(
+        `${symbols.outdated} ${plugin.id} ${colors.warning(`v${outdated.installedVersion} → v${outdated.availableVersion}`)}${formatProvenance(plugin.source)} ${colors.warning('(outdated)')}`
+      );
+    } else {
+      lines.push(`${symbols.present} ${plugin.id}${formatProvenance(plugin.source)}`);
+    }
   }
 
   for (const plugin of diff.missing) {
@@ -27,14 +45,25 @@ export function formatStatusResolved(diff: PluginDiffResolved): string {
     lines.push(`${symbols.extra} ${plugin.id} ${colors.warning('(not in config)')}`);
   }
 
+  const upToDateCount = diff.present.length - diff.outdated.length;
   const summary = [
-    diff.present.length > 0 ? colors.success(`${diff.present.length} present`) : null,
+    upToDateCount > 0 ? colors.success(`${upToDateCount} present`) : null,
+    diff.outdated.length > 0 ? colors.warning(`${diff.outdated.length} outdated`) : null,
     diff.missing.length > 0 ? colors.error(`${diff.missing.length} missing`) : null,
     diff.extra.length > 0 ? colors.warning(`${diff.extra.length} extra`) : null,
   ].filter(Boolean).join(', ');
 
   lines.push('');
   lines.push(summary || 'No plugins configured');
+
+  // Add tips when there are outdated plugins
+  if (diff.outdated.length > 0) {
+    lines.push('');
+    lines.push(colors.dim(`Tip: Run \`fettle update\` to update outdated plugins.`));
+    if (showRefreshTip) {
+      lines.push(colors.dim(`     Run \`fettle status --refresh\` to check for newer versions.`));
+    }
+  }
 
   return lines.join('\n');
 }
@@ -66,7 +95,7 @@ export function formatStatus(diff: PluginDiff): string {
   return lines.join('\n');
 }
 
-export function runStatus(cwd: string): { output: string; exitCode: number } {
+export function runStatus(cwd: string, options: StatusOptions = {}): { output: string; exitCode: number } {
   const configPath = findConfigPath(cwd);
 
   if (!configPath) {
@@ -77,6 +106,12 @@ export function runStatus(cwd: string): { output: string; exitCode: number } {
   }
 
   const projectRoot = resolveProjectRoot(cwd);
+
+  // Refresh marketplaces if requested
+  if (options.refresh) {
+    console.log('Refreshing marketplaces...');
+    refreshMarketplaces();
+  }
 
   let configContent: string;
   let config: FettleConfig;
@@ -102,10 +137,19 @@ export function runStatus(cwd: string): { output: string; exitCode: number } {
   }
 
   const installed = listPlugins();
+  const available = listAvailablePlugins();
   const diff = diffPluginsResolved(resolution.plugins, installed, projectRoot);
+  const outdated = findOutdatedPlugins(installed, available, projectRoot);
+
+  const statusDiff: StatusDiff = {
+    ...diff,
+    outdated,
+  };
+
+  const showRefreshTip = !options.refresh;
 
   return {
-    output: `${colors.header('Context:')} ${projectRoot}\n\n${formatStatusResolved(diff)}`,
+    output: `${colors.header('Context:')} ${projectRoot}\n\n${formatStatusResolved(statusDiff, showRefreshTip)}`,
     exitCode: diff.missing.length > 0 ? 1 : 0,
   };
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { formatStatus, formatStatusResolved } from './status.js';
+import { formatStatus, formatStatusResolved, StatusDiff } from './status.js';
 import { PluginDiff, PluginDiffResolved } from './diff.js';
 
 describe('formatStatus', () => {
@@ -30,7 +30,7 @@ describe('formatStatus', () => {
 
 describe('formatStatusResolved', () => {
   it('shows provenance for non-project plugins', () => {
-    const diff: PluginDiffResolved = {
+    const diff: StatusDiff = {
       present: [
         { id: 'plugin-a@registry', version: '1.0', scope: 'local', enabled: true, source: 'default' },
         { id: 'plugin-b@registry', version: '1.0', scope: 'local', enabled: true, source: 'project' },
@@ -39,13 +39,125 @@ describe('formatStatusResolved', () => {
         { id: 'plugin-c@registry', source: 'backend' },
       ],
       extra: [],
+      outdated: [],
     };
 
-    const result = formatStatusResolved(diff);
+    const result = formatStatusResolved(diff, false);
 
     expect(result).toContain('✓ plugin-a@registry (from: default)');
     expect(result).toContain('✓ plugin-b@registry');
     expect(result).not.toContain('plugin-b@registry (from:'); // no provenance for project
     expect(result).toContain('✗ plugin-c@registry (from: backend) (missing)');
+  });
+
+  it('shows outdated plugins with version info', () => {
+    const diff: StatusDiff = {
+      present: [
+        { id: 'plugin-a@registry', version: '1.0.0', scope: 'local', enabled: true, source: 'project' },
+      ],
+      missing: [],
+      extra: [],
+      outdated: [
+        {
+          id: 'plugin-a@registry',
+          installedVersion: '1.0.0',
+          availableVersion: '2.0.0',
+          scope: 'local',
+        },
+      ],
+    };
+
+    const result = formatStatusResolved(diff, false);
+
+    expect(result).toContain('↑');
+    expect(result).toContain('v1.0.0 → v2.0.0');
+    expect(result).toContain('(outdated)');
+    expect(result).not.toContain('✓ plugin-a'); // should use outdated symbol, not present
+  });
+
+  it('shows update tip when there are outdated plugins', () => {
+    const diff: StatusDiff = {
+      present: [
+        { id: 'plugin-a@registry', version: '1.0.0', scope: 'local', enabled: true, source: 'project' },
+      ],
+      missing: [],
+      extra: [],
+      outdated: [
+        {
+          id: 'plugin-a@registry',
+          installedVersion: '1.0.0',
+          availableVersion: '2.0.0',
+          scope: 'local',
+        },
+      ],
+    };
+
+    const result = formatStatusResolved(diff, true);
+
+    expect(result).toContain('fettle update');
+    expect(result).toContain('fettle status --refresh');
+  });
+
+  it('hides refresh tip when showRefreshTip is false', () => {
+    const diff: StatusDiff = {
+      present: [
+        { id: 'plugin-a@registry', version: '1.0.0', scope: 'local', enabled: true, source: 'project' },
+      ],
+      missing: [],
+      extra: [],
+      outdated: [
+        {
+          id: 'plugin-a@registry',
+          installedVersion: '1.0.0',
+          availableVersion: '2.0.0',
+          scope: 'local',
+        },
+      ],
+    };
+
+    const result = formatStatusResolved(diff, false);
+
+    expect(result).toContain('fettle update');
+    expect(result).not.toContain('fettle status --refresh');
+  });
+
+  it('shows correct summary counts with outdated plugins', () => {
+    const diff: StatusDiff = {
+      present: [
+        { id: 'plugin-a@registry', version: '1.0.0', scope: 'local', enabled: true, source: 'project' },
+        { id: 'plugin-b@registry', version: '2.0.0', scope: 'local', enabled: true, source: 'project' },
+      ],
+      missing: [],
+      extra: [],
+      outdated: [
+        {
+          id: 'plugin-a@registry',
+          installedVersion: '1.0.0',
+          availableVersion: '2.0.0',
+          scope: 'local',
+        },
+      ],
+    };
+
+    const result = formatStatusResolved(diff, false);
+
+    expect(result).toContain('1 present'); // only plugin-b is up-to-date
+    expect(result).toContain('1 outdated');
+  });
+
+  it('does not show tips when no outdated plugins', () => {
+    const diff: StatusDiff = {
+      present: [
+        { id: 'plugin-a@registry', version: '1.0.0', scope: 'local', enabled: true, source: 'project' },
+      ],
+      missing: [],
+      extra: [],
+      outdated: [],
+    };
+
+    const result = formatStatusResolved(diff, true);
+
+    expect(result).not.toContain('Tip:');
+    expect(result).not.toContain('fettle update');
   });
 });
