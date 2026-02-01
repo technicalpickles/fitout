@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fettle Playground</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0d1117;
+      color: #c9d1d9;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      padding: 16px 24px;
+      border-bottom: 1px solid #30363d;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #f0f6fc;
+    }
+
+    .header .subtitle {
+      font-size: 13px;
+      color: #8b949e;
+    }
+
+    .presets {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+
+    .preset-btn {
+      padding: 6px 12px;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #c9d1d9;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .preset-btn:hover {
+      background: #30363d;
+      border-color: #8b949e;
+    }
+
+    .preset-btn.active {
+      background: #238636;
+      border-color: #238636;
+      color: #fff;
+    }
+
+    .main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 320px;
+      border-right: 1px solid #30363d;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-section {
+      padding: 16px;
+      border-bottom: 1px solid #30363d;
+    }
+
+    .sidebar-section h3 {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #8b949e;
+      margin-bottom: 12px;
+    }
+
+    .config-editor {
+      flex: 1;
+      overflow: auto;
+      padding: 16px;
+    }
+
+    .config-editor h3 {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #8b949e;
+      margin-bottom: 12px;
+    }
+
+    .config-area {
+      width: 100%;
+      height: 200px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #c9d1d9;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 12px;
+      padding: 12px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    .config-area:focus {
+      outline: none;
+      border-color: #58a6ff;
+    }
+
+    .profile-toggles {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .profile-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .profile-toggle:hover {
+      border-color: #8b949e;
+    }
+
+    .profile-toggle.active {
+      border-color: #58a6ff;
+      background: #161b22;
+    }
+
+    .profile-toggle input {
+      display: none;
+    }
+
+    .profile-toggle .checkbox {
+      width: 16px;
+      height: 16px;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0d1117;
+    }
+
+    .profile-toggle.active .checkbox {
+      background: #238636;
+      border-color: #238636;
+    }
+
+    .profile-toggle.active .checkbox::after {
+      content: "✓";
+      color: white;
+      font-size: 10px;
+    }
+
+    .profile-toggle .profile-info {
+      flex: 1;
+    }
+
+    .profile-toggle .profile-name {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .profile-toggle .profile-desc {
+      font-size: 11px;
+      color: #8b949e;
+    }
+
+    .canvas-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .canvas-container {
+      flex: 1;
+      position: relative;
+      overflow: auto;
+      background: #0d1117;
+      background-image:
+        radial-gradient(circle at 1px 1px, #21262d 1px, transparent 0);
+      background-size: 20px 20px;
+    }
+
+    .canvas-container svg {
+      display: block;
+    }
+
+    .legend {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-size: 11px;
+    }
+
+    .legend-title {
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #f0f6fc;
+    }
+
+    .legend-items {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+
+    .status-bar {
+      display: flex;
+      gap: 16px;
+      padding: 12px 16px;
+      background: #161b22;
+      border-top: 1px solid #30363d;
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .status-dot.present { background: #238636; }
+    .status-dot.missing { background: #f85149; }
+    .status-dot.extra { background: #8b949e; }
+    .status-dot.outdated { background: #d29922; }
+
+    .prompt-area {
+      padding: 16px;
+      border-top: 1px solid #30363d;
+      background: #161b22;
+    }
+
+    .prompt-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .prompt-header h3 {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #8b949e;
+    }
+
+    .copy-btn {
+      padding: 6px 12px;
+      background: #238636;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .copy-btn:hover {
+      background: #2ea043;
+    }
+
+    .copy-btn.copied {
+      background: #8b949e;
+    }
+
+    .prompt-output {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #c9d1d9;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 12px;
+      max-height: 120px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+
+    /* SVG Styles */
+    .node-group {
+      cursor: pointer;
+    }
+
+    .node-rect {
+      stroke-width: 2;
+      transition: all 0.15s;
+    }
+
+    .node-group:hover .node-rect {
+      filter: brightness(1.1);
+    }
+
+    .node-label {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      fill: #f0f6fc;
+    }
+
+    .node-sublabel {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 9px;
+      fill: #8b949e;
+    }
+
+    .node-status {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .connection {
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .layer-label {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      fill: #484f58;
+    }
+
+    .flow-label {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 9px;
+      fill: #8b949e;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Fettle Playground</h1>
+    <span class="subtitle">Context-aware plugin manager for Claude Code</span>
+    <div class="presets">
+      <button class="preset-btn active" data-preset="default">Default Setup</button>
+      <button class="preset-btn" data-preset="backend">Backend Dev</button>
+      <button class="preset-btn" data-preset="clean">Clean Slate</button>
+      <button class="preset-btn" data-preset="drift">Config Drift</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <h3>Available Profiles</h3>
+        <div class="profile-toggles">
+          <label class="profile-toggle active" data-profile="default">
+            <input type="checkbox" checked>
+            <span class="checkbox"></span>
+            <div class="profile-info">
+              <div class="profile-name">default</div>
+              <div class="profile-desc">Auto-included base plugins</div>
+            </div>
+          </label>
+          <label class="profile-toggle" data-profile="backend">
+            <input type="checkbox">
+            <span class="checkbox"></span>
+            <div class="profile-info">
+              <div class="profile-name">backend</div>
+              <div class="profile-desc">Database, API tools</div>
+            </div>
+          </label>
+          <label class="profile-toggle" data-profile="frontend">
+            <input type="checkbox">
+            <span class="checkbox"></span>
+            <div class="profile-info">
+              <div class="profile-name">frontend</div>
+              <div class="profile-desc">React, CSS, UI tools</div>
+            </div>
+          </label>
+          <label class="profile-toggle" data-profile="security">
+            <input type="checkbox">
+            <span class="checkbox"></span>
+            <div class="profile-info">
+              <div class="profile-name">security</div>
+              <div class="profile-desc">Security scanning plugins</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="config-editor">
+        <h3>Project Config (.claude/fettle.toml)</h3>
+        <textarea class="config-area" id="configEditor" spellcheck="false"># Project-specific plugins
+plugins = [
+  "my-custom-plugin@local",
+]
+
+# Include profiles (optional)
+# profiles = ["backend"]</textarea>
+      </div>
+    </div>
+
+    <div class="canvas-area">
+      <div class="canvas-container" id="canvasContainer">
+        <svg id="diagram" width="900" height="600">
+          <defs>
+            <marker id="arrow-config" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#58a6ff"/>
+            </marker>
+            <marker id="arrow-resolve" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#a371f7"/>
+            </marker>
+            <marker id="arrow-diff" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#238636"/>
+            </marker>
+          </defs>
+        </svg>
+
+        <div class="legend">
+          <div class="legend-title">Plugin States</div>
+          <div class="legend-items">
+            <div class="legend-item">
+              <div class="legend-color" style="background: #238636"></div>
+              <span>Present - Installed & in config</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: #f85149"></div>
+              <span>Missing - In config, not installed</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: #8b949e"></div>
+              <span>Extra - Installed, not in config</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: #d29922"></div>
+              <span>Outdated - Update available</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="status-bar" id="statusBar">
+        <div class="status-item">
+          <span class="status-dot present"></span>
+          <span id="presentCount">0 Present</span>
+        </div>
+        <div class="status-item">
+          <span class="status-dot missing"></span>
+          <span id="missingCount">0 Missing</span>
+        </div>
+        <div class="status-item">
+          <span class="status-dot extra"></span>
+          <span id="extraCount">0 Extra</span>
+        </div>
+        <div class="status-item">
+          <span class="status-dot outdated"></span>
+          <span id="outdatedCount">0 Outdated</span>
+        </div>
+      </div>
+
+      <div class="prompt-area">
+        <div class="prompt-header">
+          <h3>Generated Prompt</h3>
+          <button class="copy-btn" id="copyBtn">Copy to Clipboard</button>
+        </div>
+        <div class="prompt-output" id="promptOutput"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+// Plugin database
+const PLUGINS = {
+  'superpowers@marketplace': { name: 'Superpowers', desc: 'Enhanced capabilities', version: '0.2.0' },
+  'git-tools@marketplace': { name: 'Git Tools', desc: 'Git workflow helpers', version: '1.0.0' },
+  'linter@marketplace': { name: 'Linter', desc: 'Code quality checks', version: '0.5.0' },
+  'db-tools@marketplace': { name: 'DB Tools', desc: 'Database utilities', version: '0.3.0' },
+  'api-client@marketplace': { name: 'API Client', desc: 'REST/GraphQL tools', version: '0.4.0' },
+  'react-dev@marketplace': { name: 'React Dev', desc: 'React development', version: '0.6.0' },
+  'css-tools@marketplace': { name: 'CSS Tools', desc: 'Styling utilities', version: '0.2.0' },
+  'security-scan@marketplace': { name: 'Security Scan', desc: 'Vulnerability scanner', version: '1.1.0' },
+  'dep-check@marketplace': { name: 'Dep Check', desc: 'Dependency checker', version: '0.8.0' },
+  'my-custom-plugin@local': { name: 'Custom Plugin', desc: 'Project-specific', version: '0.1.0' },
+  'legacy-plugin@marketplace': { name: 'Legacy Plugin', desc: 'Old plugin', version: '0.1.0' },
+};
+
+// Profile definitions
+const PROFILES = {
+  default: ['superpowers@marketplace', 'git-tools@marketplace', 'linter@marketplace'],
+  backend: ['db-tools@marketplace', 'api-client@marketplace'],
+  frontend: ['react-dev@marketplace', 'css-tools@marketplace'],
+  security: ['security-scan@marketplace', 'dep-check@marketplace'],
+};
+
+// State
+const state = {
+  activeProfiles: ['default'],
+  projectPlugins: ['my-custom-plugin@local'],
+  installedPlugins: {
+    'superpowers@marketplace': { version: '0.1.0', scope: 'user' }, // outdated
+    'git-tools@marketplace': { version: '1.0.0', scope: 'user' },
+    'linter@marketplace': { version: '0.5.0', scope: 'local' },
+    'legacy-plugin@marketplace': { version: '0.1.0', scope: 'global' }, // extra
+  },
+};
+
+// Presets
+const PRESETS = {
+  default: {
+    profiles: ['default'],
+    projectPlugins: ['my-custom-plugin@local'],
+    installed: {
+      'superpowers@marketplace': { version: '0.1.0', scope: 'user' },
+      'git-tools@marketplace': { version: '1.0.0', scope: 'user' },
+      'linter@marketplace': { version: '0.5.0', scope: 'local' },
+      'legacy-plugin@marketplace': { version: '0.1.0', scope: 'global' },
+    },
+    config: `# Project-specific plugins
+plugins = [
+  "my-custom-plugin@local",
+]
+
+# Include profiles (optional)
+# profiles = ["backend"]`
+  },
+  backend: {
+    profiles: ['default', 'backend'],
+    projectPlugins: ['my-custom-plugin@local'],
+    installed: {
+      'superpowers@marketplace': { version: '0.2.0', scope: 'user' },
+      'git-tools@marketplace': { version: '1.0.0', scope: 'user' },
+      'linter@marketplace': { version: '0.5.0', scope: 'local' },
+      'db-tools@marketplace': { version: '0.3.0', scope: 'local' },
+      'api-client@marketplace': { version: '0.4.0', scope: 'local' },
+      'my-custom-plugin@local': { version: '0.1.0', scope: 'local' },
+    },
+    config: `# Backend project config
+plugins = [
+  "my-custom-plugin@local",
+]
+
+profiles = ["backend"]`
+  },
+  clean: {
+    profiles: ['default'],
+    projectPlugins: [],
+    installed: {
+      'superpowers@marketplace': { version: '0.2.0', scope: 'user' },
+      'git-tools@marketplace': { version: '1.0.0', scope: 'user' },
+      'linter@marketplace': { version: '0.5.0', scope: 'local' },
+    },
+    config: `# Clean slate - just defaults
+plugins = []`
+  },
+  drift: {
+    profiles: ['default', 'frontend'],
+    projectPlugins: ['my-custom-plugin@local', 'db-tools@marketplace'],
+    installed: {
+      'superpowers@marketplace': { version: '0.1.0', scope: 'user' },
+      'legacy-plugin@marketplace': { version: '0.1.0', scope: 'global' },
+      'react-dev@marketplace': { version: '0.5.0', scope: 'local' },
+    },
+    config: `# Config with drift issues
+plugins = [
+  "my-custom-plugin@local",
+  "db-tools@marketplace",
+]
+
+profiles = ["frontend"]`
+  },
+};
+
+// DOM elements
+const svg = document.getElementById('diagram');
+const configEditor = document.getElementById('configEditor');
+const promptOutput = document.getElementById('promptOutput');
+const copyBtn = document.getElementById('copyBtn');
+
+// Calculate diff
+function calculateDiff() {
+  const desired = new Set();
+  const sources = {};
+
+  // Add plugins from active profiles
+  state.activeProfiles.forEach(profile => {
+    (PROFILES[profile] || []).forEach(plugin => {
+      if (!desired.has(plugin)) {
+        desired.add(plugin);
+        sources[plugin] = profile === 'default' ? 'default profile' : `${profile} profile`;
+      }
+    });
+  });
+
+  // Add project plugins
+  state.projectPlugins.forEach(plugin => {
+    if (!desired.has(plugin)) {
+      desired.add(plugin);
+      sources[plugin] = 'project config';
+    }
+  });
+
+  const installed = new Set(Object.keys(state.installedPlugins));
+
+  const present = [];
+  const missing = [];
+  const extra = [];
+  const outdated = [];
+
+  // Check desired plugins
+  desired.forEach(plugin => {
+    if (installed.has(plugin)) {
+      const inst = state.installedPlugins[plugin];
+      const latest = PLUGINS[plugin]?.version || '0.0.0';
+
+      if (inst.version < latest) {
+        outdated.push({
+          id: plugin,
+          source: sources[plugin],
+          installed: inst.version,
+          available: latest,
+          scope: inst.scope,
+        });
+      } else {
+        present.push({
+          id: plugin,
+          source: sources[plugin],
+          version: inst.version,
+          scope: inst.scope,
+        });
+      }
+    } else {
+      missing.push({
+        id: plugin,
+        source: sources[plugin],
+      });
+    }
+  });
+
+  // Check for extras
+  installed.forEach(plugin => {
+    if (!desired.has(plugin)) {
+      extra.push({
+        id: plugin,
+        version: state.installedPlugins[plugin].version,
+        scope: state.installedPlugins[plugin].scope,
+      });
+    }
+  });
+
+  return { present, missing, extra, outdated, sources };
+}
+
+// Render diagram
+function renderDiagram() {
+  try {
+    const diff = calculateDiff();
+
+    console.log('Diff result:', diff);
+    console.log('Present:', diff.present.length, 'Missing:', diff.missing.length, 'Extra:', diff.extra.length, 'Outdated:', diff.outdated.length);
+
+    // Update status bar FIRST before any SVG operations
+    document.getElementById('presentCount').textContent = `${diff.present.length} Present`;
+    document.getElementById('missingCount').textContent = `${diff.missing.length} Missing`;
+    document.getElementById('extraCount').textContent = `${diff.extra.length} Extra`;
+    document.getElementById('outdatedCount').textContent = `${diff.outdated.length} Outdated`;
+
+    // Update prompt
+    updatePrompt(diff);
+
+  // Clear SVG and recreate defs
+  svg.innerHTML = `
+    <defs>
+      <marker id="arrow-config" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#58a6ff"/>
+      </marker>
+      <marker id="arrow-resolve" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#a371f7"/>
+      </marker>
+      <marker id="arrow-diff" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#238636"/>
+      </marker>
+    </defs>
+  `;
+
+  // Draw layers
+  const layers = [
+    { y: 40, label: 'CONFIGURATION', color: '#1f6feb' },
+    { y: 200, label: 'RESOLUTION', color: '#a371f7' },
+    { y: 360, label: 'DIFF RESULT', color: '#238636' },
+  ];
+
+  layers.forEach(layer => {
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', '30');
+    text.setAttribute('y', layer.y);
+    text.setAttribute('class', 'layer-label');
+    text.textContent = layer.label;
+    svg.appendChild(text);
+
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', '30');
+    line.setAttribute('y1', layer.y + 10);
+    line.setAttribute('x2', '870');
+    line.setAttribute('y2', layer.y + 10);
+    line.setAttribute('stroke', '#21262d');
+    line.setAttribute('stroke-width', '1');
+    svg.appendChild(line);
+  });
+
+  // Configuration layer nodes
+  const configNodes = [];
+
+  // Default profile
+  if (state.activeProfiles.includes('default')) {
+    configNodes.push({
+      x: 80, y: 70, w: 120, h: 50,
+      label: 'default profile',
+      sublabel: `${PROFILES.default.length} plugins`,
+      color: '#1f6feb',
+    });
+  }
+
+  // Other profiles
+  let profileX = 220;
+  state.activeProfiles.filter(p => p !== 'default').forEach(profile => {
+    configNodes.push({
+      x: profileX, y: 70, w: 120, h: 50,
+      label: `${profile} profile`,
+      sublabel: `${PROFILES[profile]?.length || 0} plugins`,
+      color: '#8957e5',
+    });
+    profileX += 140;
+  });
+
+  // Project config
+  configNodes.push({
+    x: Math.max(profileX, 360), y: 70, w: 140, h: 50,
+    label: 'project config',
+    sublabel: `${state.projectPlugins.length} plugins`,
+    color: '#f78166',
+  });
+
+  // Resolution layer - merged plugins
+  const allDesired = [];
+  state.activeProfiles.forEach(profile => {
+    (PROFILES[profile] || []).forEach(p => {
+      if (!allDesired.find(x => x.id === p)) {
+        allDesired.push({ id: p, source: profile });
+      }
+    });
+  });
+  state.projectPlugins.forEach(p => {
+    if (!allDesired.find(x => x.id === p)) {
+      allDesired.push({ id: p, source: 'project' });
+    }
+  });
+
+  const resolvedNodes = allDesired.map((plugin, i) => ({
+    x: 80 + (i % 5) * 160,
+    y: 230 + Math.floor(i / 5) * 60,
+    w: 150,
+    h: 45,
+    label: PLUGINS[plugin.id]?.name || plugin.id.split('@')[0],
+    sublabel: plugin.id,
+    color: plugin.source === 'default' ? '#1f6feb' :
+           plugin.source === 'project' ? '#f78166' : '#8957e5',
+  }));
+
+  // Draw connections from config to resolved
+  configNodes.forEach(node => {
+    const targetY = 230;
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    const startX = node.x + node.w / 2;
+    const startY = node.y + node.h;
+    const midY = (startY + targetY) / 2;
+
+    path.setAttribute('d', `M ${startX} ${startY} Q ${startX} ${midY} ${startX + 50} ${targetY - 20}`);
+    path.setAttribute('class', 'connection');
+    path.setAttribute('stroke', '#58a6ff');
+    path.setAttribute('stroke-opacity', '0.3');
+    path.setAttribute('marker-end', 'url(#arrow-config)');
+    svg.appendChild(path);
+  });
+
+  // Draw config nodes
+  configNodes.forEach(node => drawNode(node));
+
+  // Draw resolved nodes
+  resolvedNodes.forEach(node => drawNode(node));
+
+  // Diff result layer
+  const diffX = { present: 80, outdated: 280, missing: 480, extra: 680 };
+  const diffY = 390;
+
+  // Draw diff boxes
+  const diffCategories = [
+    { key: 'present', label: 'Present', count: diff.present.length, color: '#238636' },
+    { key: 'outdated', label: 'Outdated', count: diff.outdated.length, color: '#d29922' },
+    { key: 'missing', label: 'Missing', count: diff.missing.length, color: '#f85149' },
+    { key: 'extra', label: 'Extra', count: diff.extra.length, color: '#8b949e' },
+  ];
+
+  diffCategories.forEach(cat => {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('class', 'node-group');
+
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('x', diffX[cat.key]);
+    rect.setAttribute('y', diffY);
+    rect.setAttribute('width', '180');
+    rect.setAttribute('height', '100');
+    rect.setAttribute('rx', '8');
+    rect.setAttribute('fill', '#161b22');
+    rect.setAttribute('stroke', cat.color);
+    rect.setAttribute('class', 'node-rect');
+    g.appendChild(rect);
+
+    const title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    title.setAttribute('x', diffX[cat.key] + 90);
+    title.setAttribute('y', diffY + 25);
+    title.setAttribute('text-anchor', 'middle');
+    title.setAttribute('class', 'node-label');
+    title.setAttribute('fill', cat.color);
+    title.textContent = `${cat.label} (${cat.count})`;
+    g.appendChild(title);
+
+    // List plugins
+    const plugins = diff[cat.key].slice(0, 3);
+    plugins.forEach((plugin, i) => {
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      text.setAttribute('x', diffX[cat.key] + 10);
+      text.setAttribute('y', diffY + 48 + i * 16);
+      text.setAttribute('class', 'node-sublabel');
+
+      const name = PLUGINS[plugin.id]?.name || plugin.id.split('@')[0];
+      let label = name;
+      if (cat.key === 'outdated') {
+        label = `${name} ${plugin.installed} → ${plugin.available}`;
+      } else if (cat.key === 'present' || cat.key === 'extra') {
+        label = `${name} v${plugin.version}`;
+      }
+      text.textContent = label.slice(0, 26);
+      g.appendChild(text);
+    });
+
+    if (diff[cat.key].length > 3) {
+      const more = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      more.setAttribute('x', diffX[cat.key] + 10);
+      more.setAttribute('y', diffY + 48 + 3 * 16);
+      more.setAttribute('class', 'node-sublabel');
+      more.textContent = `+${diff[cat.key].length - 3} more`;
+      g.appendChild(more);
+    }
+
+    svg.appendChild(g);
+  });
+
+  // Draw connections from resolved to diff
+  resolvedNodes.forEach((node, i) => {
+    const plugin = allDesired[i];
+    const installed = state.installedPlugins[plugin.id];
+    let targetKey;
+
+    if (!installed) {
+      targetKey = 'missing';
+    } else {
+      const latest = PLUGINS[plugin.id]?.version || '0.0.0';
+      if (installed.version < latest) {
+        targetKey = 'outdated';
+      } else {
+        targetKey = 'present';
+      }
+    }
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    const startX = node.x + node.w / 2;
+    const startY = node.y + node.h;
+    const endX = diffX[targetKey] + 90;
+    const endY = diffY;
+
+    path.setAttribute('d', `M ${startX} ${startY} C ${startX} ${startY + 40} ${endX} ${endY - 40} ${endX} ${endY}`);
+    path.setAttribute('class', 'connection');
+    path.setAttribute('stroke', diffCategories.find(c => c.key === targetKey).color);
+    path.setAttribute('stroke-opacity', '0.4');
+    svg.appendChild(path);
+  });
+
+  } catch (e) {
+    console.error('Error in renderDiagram:', e);
+  }
+}
+
+function drawNode(node) {
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.setAttribute('class', 'node-group');
+
+  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  rect.setAttribute('x', node.x);
+  rect.setAttribute('y', node.y);
+  rect.setAttribute('width', node.w);
+  rect.setAttribute('height', node.h);
+  rect.setAttribute('rx', '6');
+  rect.setAttribute('fill', '#161b22');
+  rect.setAttribute('stroke', node.color);
+  rect.setAttribute('class', 'node-rect');
+  g.appendChild(rect);
+
+  const title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  title.setAttribute('x', node.x + node.w / 2);
+  title.setAttribute('y', node.y + (node.sublabel ? 18 : node.h / 2 + 4));
+  title.setAttribute('text-anchor', 'middle');
+  title.setAttribute('class', 'node-label');
+  title.textContent = node.label;
+  g.appendChild(title);
+
+  if (node.sublabel) {
+    const sub = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    sub.setAttribute('x', node.x + node.w / 2);
+    sub.setAttribute('y', node.y + 34);
+    sub.setAttribute('text-anchor', 'middle');
+    sub.setAttribute('class', 'node-sublabel');
+    sub.textContent = node.sublabel;
+    g.appendChild(sub);
+  }
+
+  svg.appendChild(g);
+}
+
+function updatePrompt(diff) {
+  const parts = [];
+
+  if (diff.missing.length > 0) {
+    const names = diff.missing.map(p => PLUGINS[p.id]?.name || p.id).join(', ');
+    parts.push(`Install missing plugins: ${names}`);
+  }
+
+  if (diff.outdated.length > 0) {
+    const updates = diff.outdated.map(p =>
+      `${PLUGINS[p.id]?.name || p.id} (${p.installed} → ${p.available})`
+    ).join(', ');
+    parts.push(`Update outdated plugins: ${updates}`);
+  }
+
+  if (diff.extra.length > 0) {
+    const names = diff.extra.map(p => PLUGINS[p.id]?.name || p.id).join(', ');
+    parts.push(`Consider removing extra plugins not in config: ${names}`);
+  }
+
+  if (parts.length === 0) {
+    promptOutput.textContent = 'All plugins are in sync. No action needed.';
+  } else {
+    const profiles = state.activeProfiles.length > 1
+      ? `Using profiles: ${state.activeProfiles.join(', ')}. `
+      : '';
+    promptOutput.textContent = `${profiles}${parts.join('. ')}.
+
+Run: fettle apply`;
+  }
+}
+
+function parseConfig(text) {
+  const plugins = [];
+  const profiles = [];
+
+  const pluginMatch = text.match(/plugins\s*=\s*\[([\s\S]*?)\]/);
+  if (pluginMatch) {
+    const items = pluginMatch[1].match(/"([^"]+)"/g);
+    if (items) {
+      items.forEach(item => plugins.push(item.replace(/"/g, '')));
+    }
+  }
+
+  const profileMatch = text.match(/profiles\s*=\s*\[([\s\S]*?)\]/);
+  if (profileMatch) {
+    const items = profileMatch[1].match(/"([^"]+)"/g);
+    if (items) {
+      items.forEach(item => profiles.push(item.replace(/"/g, '')));
+    }
+  }
+
+  return { plugins, profiles };
+}
+
+// Event handlers
+document.querySelectorAll('.profile-toggle').forEach(toggle => {
+  toggle.addEventListener('click', (e) => {
+    const profile = toggle.dataset.profile;
+    const isActive = toggle.classList.contains('active');
+
+    if (profile === 'default') return; // Default always active
+
+    if (isActive) {
+      toggle.classList.remove('active');
+      state.activeProfiles = state.activeProfiles.filter(p => p !== profile);
+    } else {
+      toggle.classList.add('active');
+      state.activeProfiles.push(profile);
+    }
+
+    renderDiagram();
+  });
+});
+
+configEditor.addEventListener('input', () => {
+  const parsed = parseConfig(configEditor.value);
+  state.projectPlugins = parsed.plugins;
+
+  // Update profile toggles from config
+  document.querySelectorAll('.profile-toggle').forEach(toggle => {
+    const profile = toggle.dataset.profile;
+    if (profile === 'default') return;
+
+    if (parsed.profiles.includes(profile)) {
+      toggle.classList.add('active');
+      if (!state.activeProfiles.includes(profile)) {
+        state.activeProfiles.push(profile);
+      }
+    }
+  });
+
+  renderDiagram();
+});
+
+document.querySelectorAll('.preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const preset = PRESETS[btn.dataset.preset];
+    if (!preset) return;
+
+    state.activeProfiles = [...preset.profiles];
+    state.projectPlugins = [...preset.projectPlugins];
+    state.installedPlugins = { ...preset.installed };
+    configEditor.value = preset.config;
+
+    // Update profile toggles
+    document.querySelectorAll('.profile-toggle').forEach(toggle => {
+      const profile = toggle.dataset.profile;
+      if (state.activeProfiles.includes(profile)) {
+        toggle.classList.add('active');
+      } else {
+        toggle.classList.remove('active');
+      }
+    });
+
+    renderDiagram();
+  });
+});
+
+copyBtn.addEventListener('click', () => {
+  navigator.clipboard.writeText(promptOutput.textContent).then(() => {
+    copyBtn.textContent = 'Copied!';
+    copyBtn.classList.add('copied');
+    setTimeout(() => {
+      copyBtn.textContent = 'Copy to Clipboard';
+      copyBtn.classList.remove('copied');
+    }, 2000);
+  });
+});
+
+// Initial render
+renderDiagram();
+</script>
+</body>
+</html>
