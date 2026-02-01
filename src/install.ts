@@ -170,13 +170,16 @@ export function runInstall(cwd: string, options: { dryRun?: boolean; hook?: bool
       installPlugin(plugin.id);
       result.installed.push(plugin.id);
     } catch (err) {
-      result.failed.push({ id: plugin.id, error: err instanceof Error ? err.message : 'Unknown error' });
+      const error = err instanceof Error ? err.message : 'Unknown error';
+      result.failed.push({ id: plugin.id, error });
+      if (options.hook) {
+        writeHookError(`Failed to install ${plugin.id}: ${error}`);
+      }
     }
   }
 
   // In hook mode: stdout for success message, stderr for errors
   if (options.hook) {
-    // In hook mode: stdout for success message, stderr for errors
     if (result.failed.length > 0) {
       return {
         output: '',
