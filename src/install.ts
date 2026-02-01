@@ -7,6 +7,7 @@ import { resolveProfiles } from './profiles.js';
 import { colors, symbols, formatContextLine } from './colors.js';
 import { ensureMarketplaces } from './marketplace.js';
 import { hasGlobalConfig, getConfiguredMarketplaces } from './globalConfig.js';
+import { writeHookError } from './hookError.js';
 
 export interface InstallResult {
   installed: string[];
@@ -99,8 +100,12 @@ export function runInstall(cwd: string, options: { dryRun?: boolean; hook?: bool
     configContent = readFileSync(configPath, 'utf-8');
     config = parseConfig(configContent);
   } catch (err) {
+    const message = `Failed to read config: ${err instanceof Error ? err.message : 'Unknown error'}`;
+    if (options.hook) {
+      writeHookError(message);
+    }
     return {
-      output: `Failed to read config: ${err instanceof Error ? err.message : 'Unknown error'}`,
+      output: options.hook ? '' : message,
       exitCode: 1,
     };
   }
