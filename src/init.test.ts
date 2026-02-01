@@ -1,9 +1,9 @@
 // src/init.test.ts
 import { describe, it, expect } from 'vitest';
-import { getClaudeSettingsPath, readClaudeSettings, hasFettleHook, addFettleHook, writeClaudeSettings, getDefaultProfilePath, createDefaultProfile, runInit, InitResult, getSkillsDir, getFettleSkillPath, createFettleSkill } from './init.js';
+import { getClaudeSettingsPath, readClaudeSettings, hasFettleHook, addFettleHook, writeClaudeSettings, getDefaultProfilePath, createDefaultProfile, runInit, InitResult, getSkillsDir, getFettleSkillPath, createFettleSkill, hasFettleSkill, hasDefaultProfile, hasProjectConfig, getProjectConfigContent, getProjectConfigPath } from './init.js';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
-import { mkdtempSync, writeFileSync, rmSync, readFileSync, existsSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { mkdtempSync, writeFileSync, rmSync, readFileSync, existsSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 
 describe('getClaudeSettingsPath', () => {
@@ -39,7 +39,22 @@ describe('hasFettleHook', () => {
     expect(hasFettleHook({ env: {} })).toBe(false);
   });
 
-  it('returns true when fettle hook exists', () => {
+  it('returns true when fettle install hook exists', () => {
+    const settings = {
+      hooks: {
+        SessionStart: [
+          {
+            hooks: [
+              { type: 'command', command: 'fettle install --hook' }
+            ]
+          }
+        ]
+      }
+    };
+    expect(hasFettleHook(settings)).toBe(true);
+  });
+
+  it('returns true when legacy fettle apply hook exists', () => {
     const settings = {
       hooks: {
         SessionStart: [
@@ -100,7 +115,7 @@ describe('addFettleHook', () => {
     const result = addFettleHook(settings);
     expect(result.hooks?.SessionStart?.[0]).toEqual({
       hooks: [
-        { type: 'command', command: 'fettle apply --hook' }
+        { type: 'command', command: 'fettle install --hook' }
       ]
     });
   });
@@ -302,5 +317,71 @@ describe('createFettleSkill', () => {
     if (!alreadyExisted) {
       rmSync(skillDir, { recursive: true });
     }
+  });
+});
+
+describe('hasFettleSkill', () => {
+  it('returns true when skill exists', () => {
+    const skillPath = getFettleSkillPath();
+    const alreadyExisted = existsSync(skillPath);
+
+    // Create if needed
+    if (!alreadyExisted) {
+      createFettleSkill();
+    }
+
+    expect(hasFettleSkill()).toBe(true);
+
+    // Clean up if we created it
+    if (!alreadyExisted) {
+      rmSync(join(homedir(), '.claude', 'skills', 'fettle'), { recursive: true });
+    }
+  });
+});
+
+describe('hasDefaultProfile', () => {
+  it('returns false for nonexistent profile', () => {
+    expect(hasDefaultProfile('/nonexistent/profiles')).toBe(false);
+  });
+
+  it('returns true when profile exists', () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'fettle-test-'));
+    const profilePath = join(tmpDir, 'default.toml');
+    writeFileSync(profilePath, 'plugins = []');
+
+    expect(hasDefaultProfile(tmpDir, 'default')).toBe(true);
+
+    rmSync(tmpDir, { recursive: true });
+  });
+});
+
+describe('hasProjectConfig', () => {
+  it('returns false for nonexistent config', () => {
+    expect(hasProjectConfig('/nonexistent/project')).toBe(false);
+  });
+
+  it('returns true when config exists', () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'fettle-test-'));
+    const configPath = join(tmpDir, '.claude', 'fettle.toml');
+    mkdirSync(dirname(configPath), { recursive: true });
+    writeFileSync(configPath, 'plugins = []');
+
+    expect(hasProjectConfig(tmpDir)).toBe(true);
+
+    rmSync(tmpDir, { recursive: true });
+  });
+});
+
+describe('getProjectConfigContent', () => {
+  it('generates config without profile when not specified', () => {
+    const content = getProjectConfigContent();
+    expect(content).toContain('# profiles = ["default"]');
+    expect(content).toContain('plugins = [');
+  });
+
+  it('generates config with profile when specified', () => {
+    const content = getProjectConfigContent('myprofile');
+    expect(content).toContain('profiles = ["myprofile"]');
+    expect(content).not.toContain('# profiles');
   });
 });

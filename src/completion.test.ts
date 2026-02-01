@@ -72,7 +72,7 @@ describe('completion', () => {
       const { handleCompletion } = await import('./completion.js');
       expect(handleCompletion()).toBe(true);
       expect(tabtab.log).toHaveBeenCalledWith(
-        ['status', 'apply', 'update', 'marketplace', 'init', 'completion'],
+        ['status', 'install', 'update', 'marketplace', 'init', 'completion'],
         'bash',
         console.log
       );
@@ -132,16 +132,16 @@ describe('completion', () => {
       expect(tabtab.log).toHaveBeenCalledWith(['--refresh'], 'bash', console.log);
     });
 
-    it('completes flags for apply command', async () => {
+    it('completes flags for install command', async () => {
       vi.mocked(tabtab.parseEnv).mockReturnValue({
         complete: true,
         words: 2,
-        point: 13,
-        line: 'fettle apply ',
-        partial: 'fettle apply ',
+        point: 15,
+        line: 'fettle install ',
+        partial: 'fettle install ',
         last: '',
         lastPartial: '',
-        prev: 'apply',
+        prev: 'install',
       });
       vi.mocked(tabtab.getShellFromEnv).mockReturnValue('bash');
 

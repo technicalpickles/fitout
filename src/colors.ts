@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import { homedir } from 'node:os';
 
 export const colors = {
   // Semantic
@@ -34,4 +35,22 @@ export function provenanceColor(source: string): (text: string) => string {
     default:
       return colors.sourceOther;
   }
+}
+
+/**
+ * Format a path for display, replacing $HOME with ~
+ */
+export function formatPath(path: string): string {
+  const home = homedir();
+  return path.startsWith(home) ? path.replace(home, '~') : path;
+}
+
+/**
+ * Format context line, only showing if different from cwd
+ */
+export function formatContextLine(projectRoot: string, cwd: string): string {
+  if (projectRoot === cwd) {
+    return '';
+  }
+  return `${colors.header('Context:')} ${formatPath(projectRoot)}\n\n`;
 }

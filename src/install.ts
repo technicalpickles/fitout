@@ -4,15 +4,17 @@ import { parseConfig, FettleConfig } from './config.js';
 import { listPlugins, installPlugin } from './claude.js';
 import { diffPluginsResolved } from './diff.js';
 import { resolveProfiles } from './profiles.js';
-import { colors, symbols } from './colors.js';
+import { colors, symbols, formatContextLine } from './colors.js';
+import { ensureMarketplaces } from './marketplace.js';
+import { hasGlobalConfig, getConfiguredMarketplaces } from './globalConfig.js';
 
-export interface ApplyResult {
+export interface InstallResult {
   installed: string[];
   failed: { id: string; error: string }[];
   alreadyPresent: string[];
 }
 
-export function formatApplyResultHook(result: ApplyResult): string {
+export function formatInstallResultHook(result: InstallResult): string {
   if (result.installed.length === 0) {
     // Nothing installed - either nothing to do or all failed
     // Failures go to stderr, so stdout is empty
@@ -33,7 +35,7 @@ export function formatApplyResultHook(result: ApplyResult): string {
   ].join('\n');
 }
 
-export function formatApplyResult(result: ApplyResult): string {
+export function formatInstallResult(result: InstallResult): string {
   const lines: string[] = [];
 
   if (result.installed.length === 0 && result.failed.length === 0) {
@@ -67,7 +69,7 @@ export function formatApplyResult(result: ApplyResult): string {
   return lines.join('\n');
 }
 
-export function runApply(cwd: string, options: { dryRun?: boolean; hook?: boolean } = {}): { output: string; exitCode: number } {
+export function runInstall(cwd: string, options: { dryRun?: boolean; hook?: boolean } = {}): { output: string; exitCode: number } {
   const configPath = findConfigPath(cwd);
 
   if (!configPath) {
@@ -103,6 +105,21 @@ export function runApply(cwd: string, options: { dryRun?: boolean; hook?: boolea
     };
   }
 
+  // Ensure configured marketplaces are installed (skip in hook mode for cleaner output)
+  if (!options.hook && hasGlobalConfig()) {
+    const marketplaces = getConfiguredMarketplaces();
+    if (Object.keys(marketplaces).length > 0) {
+      const marketplaceResult = ensureMarketplaces();
+      if (marketplaceResult.added.length > 0) {
+        console.log(colors.header('Marketplaces:'));
+        for (const name of marketplaceResult.added) {
+          console.log(`  ${symbols.install} ${name}`);
+        }
+        console.log('');
+      }
+    }
+  }
+
   // Resolve profiles
   const profilesDir = getProfilesDir();
   const resolution = resolveProfiles(profilesDir, config);
@@ -117,21 +134,23 @@ export function runApply(cwd: string, options: { dryRun?: boolean; hook?: boolea
   const installed = listPlugins();
   const diff = diffPluginsResolved(resolution.plugins, installed, projectRoot);
 
+  const contextLine = formatContextLine(projectRoot, cwd);
+
   if (options.dryRun) {
     if (diff.missing.length === 0) {
       return {
-        output: `${colors.header('Context:')} ${projectRoot}\n\n${symbols.present} ${colors.success(`All ${diff.present.length} plugins present`)}`,
+        output: `${contextLine}${symbols.present} ${colors.success(`All ${diff.present.length} plugins present`)}`,
         exitCode: 0,
       };
     }
-    const lines = [`${colors.header('Context:')} ${projectRoot}\n`, colors.header('Would install:')];
+    const lines = [contextLine + colors.header('Would install:')];
     for (const plugin of diff.missing) {
       lines.push(`  ${symbols.install} ${plugin.id}`);
     }
     return { output: lines.join('\n'), exitCode: 0 };
   }
 
-  const result: ApplyResult = {
+  const result: InstallResult = {
     installed: [],
     failed: [],
     alreadyPresent: diff.present.map((p) => p.id),
@@ -146,7 +165,7 @@ export function runApply(cwd: string, options: { dryRun?: boolean; hook?: boolea
     }
   }
 
-  // At the end of runApply, replace the final return with:
+  // In hook mode: stdout for success message, stderr for errors
   if (options.hook) {
     // In hook mode: stdout for success message, stderr for errors
     if (result.failed.length > 0) {
@@ -156,13 +175,13 @@ export function runApply(cwd: string, options: { dryRun?: boolean; hook?: boolea
       };
     }
     return {
-      output: formatApplyResultHook(result),
+      output: formatInstallResultHook(result),
       exitCode: 0,
     };
   }
 
   return {
-    output: `${colors.header('Context:')} ${projectRoot}\n\n${formatApplyResult(result)}`,
+    output: `${contextLine}${formatInstallResult(result)}`,
     exitCode: result.failed.length > 0 ? 1 : 0,
   };
 }
