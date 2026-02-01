@@ -18,7 +18,8 @@ Write a progress doc when completing a significant milestone or ending a session
 
 ```bash
 npm run dev -- status      # Run status command in dev mode
-npm run dev -- apply       # Run apply command in dev mode
+npm run dev -- install     # Run install command in dev mode
+npm run dev                # Run install (default command)
 npm test                   # Run tests
 npm run build              # Build to dist/
 ```
@@ -31,7 +32,7 @@ npm run build              # Build to dist/
 - `src/claude.ts` - Shell out to Claude CLI
 - `src/diff.ts` - Compare desired vs actual
 - `src/status.ts` - Status command
-- `src/apply.ts` - Apply command
+- `src/install.ts` - Install command
 
 ## Config
 

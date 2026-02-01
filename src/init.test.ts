@@ -39,7 +39,22 @@ describe('hasFettleHook', () => {
     expect(hasFettleHook({ env: {} })).toBe(false);
   });
 
-  it('returns true when fettle hook exists', () => {
+  it('returns true when fettle install hook exists', () => {
+    const settings = {
+      hooks: {
+        SessionStart: [
+          {
+            hooks: [
+              { type: 'command', command: 'fettle install --hook' }
+            ]
+          }
+        ]
+      }
+    };
+    expect(hasFettleHook(settings)).toBe(true);
+  });
+
+  it('returns true when legacy fettle apply hook exists', () => {
     const settings = {
       hooks: {
         SessionStart: [
@@ -100,7 +115,7 @@ describe('addFettleHook', () => {
     const result = addFettleHook(settings);
     expect(result.hooks?.SessionStart?.[0]).toEqual({
       hooks: [
-        { type: 'command', command: 'fettle apply --hook' }
+        { type: 'command', command: 'fettle install --hook' }
       ]
     });
   });

@@ -25,8 +25,12 @@ export function hasFettleHook(settings: Record<string, unknown>): boolean {
 
   const sessionStartHooks = hooks.SessionStart as Array<{ hooks?: Array<{ command?: string }> }>;
 
+  // Check for both old 'apply' and new 'install' commands for backwards compatibility
   return sessionStartHooks.some((matcher) =>
-    matcher.hooks?.some((hook) => hook.command?.includes('fettle apply --hook'))
+    matcher.hooks?.some((hook) =>
+      hook.command?.includes('fettle install --hook') ||
+      hook.command?.includes('fettle apply --hook')
+    )
   );
 }
 
@@ -53,7 +57,7 @@ export function addFettleHook(settings: Record<string, unknown>): ClaudeSettings
 
   result.hooks.SessionStart.push({
     hooks: [
-      { type: 'command', command: 'fettle apply --hook' }
+      { type: 'command', command: 'fettle install --hook' }
     ]
   });
 
@@ -107,7 +111,7 @@ Read \`~/.claude/settings.json\` and verify the Fettle hook exists:
     "SessionStart": [
       {
         "hooks": [
-          { "type": "command", "command": "fettle apply --hook" }
+          { "type": "command", "command": "fettle install --hook" }
         ]
       }
     ]
@@ -135,7 +139,7 @@ Provide a clear diagnostic summary:
 If there are issues, suggest the appropriate fix:
 - Missing hook → \`fettle init --hook-only\`
 - Missing config → \`fettle init\`
-- Missing plugins → \`fettle apply\`
+- Missing plugins → \`fettle install\`
 - Outdated plugins → \`fettle update\`
 `;
 

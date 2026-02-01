@@ -6,13 +6,13 @@ import { diffPluginsResolved } from './diff.js';
 import { resolveProfiles } from './profiles.js';
 import { colors, symbols } from './colors.js';
 
-export interface ApplyResult {
+export interface InstallResult {
   installed: string[];
   failed: { id: string; error: string }[];
   alreadyPresent: string[];
 }
 
-export function formatApplyResultHook(result: ApplyResult): string {
+export function formatInstallResultHook(result: InstallResult): string {
   if (result.installed.length === 0) {
     // Nothing installed - either nothing to do or all failed
     // Failures go to stderr, so stdout is empty
@@ -33,7 +33,7 @@ export function formatApplyResultHook(result: ApplyResult): string {
   ].join('\n');
 }
 
-export function formatApplyResult(result: ApplyResult): string {
+export function formatInstallResult(result: InstallResult): string {
   const lines: string[] = [];
 
   if (result.installed.length === 0 && result.failed.length === 0) {
@@ -67,7 +67,7 @@ export function formatApplyResult(result: ApplyResult): string {
   return lines.join('\n');
 }
 
-export function runApply(cwd: string, options: { dryRun?: boolean; hook?: boolean } = {}): { output: string; exitCode: number } {
+export function runInstall(cwd: string, options: { dryRun?: boolean; hook?: boolean } = {}): { output: string; exitCode: number } {
   const configPath = findConfigPath(cwd);
 
   if (!configPath) {
@@ -131,7 +131,7 @@ export function runApply(cwd: string, options: { dryRun?: boolean; hook?: boolea
     return { output: lines.join('\n'), exitCode: 0 };
   }
 
-  const result: ApplyResult = {
+  const result: InstallResult = {
     installed: [],
     failed: [],
     alreadyPresent: diff.present.map((p) => p.id),
@@ -146,7 +146,7 @@ export function runApply(cwd: string, options: { dryRun?: boolean; hook?: boolea
     }
   }
 
-  // At the end of runApply, replace the final return with:
+  // In hook mode: stdout for success message, stderr for errors
   if (options.hook) {
     // In hook mode: stdout for success message, stderr for errors
     if (result.failed.length > 0) {
@@ -156,13 +156,13 @@ export function runApply(cwd: string, options: { dryRun?: boolean; hook?: boolea
       };
     }
     return {
-      output: formatApplyResultHook(result),
+      output: formatInstallResultHook(result),
       exitCode: 0,
     };
   }
 
   return {
-    output: `${colors.header('Context:')} ${projectRoot}\n\n${formatApplyResult(result)}`,
+    output: `${colors.header('Context:')} ${projectRoot}\n\n${formatInstallResult(result)}`,
     exitCode: result.failed.length > 0 ? 1 : 0,
   };
 }
