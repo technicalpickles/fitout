@@ -7,9 +7,41 @@ import { resolveProfiles } from './profiles.js';
 import { colors, symbols, provenanceColor, formatContextLine } from './colors.js';
 import { listAvailablePlugins, refreshMarketplaces } from './marketplace.js';
 import { findOutdatedPlugins, OutdatedPlugin } from './update.js';
+import { getClaudeSettingsPath, readClaudeSettings, hasFettleHook, hasFettleSkill } from './init.js';
 
 export interface StatusOptions {
   refresh?: boolean;
+}
+
+export interface GlobalStatus {
+  hookInstalled: boolean;
+  skillInstalled: boolean;
+  profiles: string[];
+}
+
+export function formatGlobalStatus(status: GlobalStatus): string {
+  const lines: string[] = [];
+
+  lines.push(colors.header('Global:'));
+
+  if (status.hookInstalled) {
+    lines.push(`  ${symbols.present} Hook installed`);
+  } else {
+    lines.push(`  ${symbols.missing} Hook ${colors.dim('(run `fettle init`)')}`);
+  }
+
+  if (status.skillInstalled) {
+    lines.push(`  ${symbols.present} Skill installed`);
+  } else {
+    lines.push(`  ${symbols.missing} Skill ${colors.dim('(run `fettle init`)')}`);
+  }
+
+  if (status.profiles.length > 0) {
+    const profileList = status.profiles.map(p => provenanceColor(p)(p)).join(', ');
+    lines.push(`  ${symbols.present} Profiles: ${profileList}`);
+  }
+
+  return lines.join('\n');
 }
 
 function formatProvenance(source: string): string {
@@ -96,11 +128,23 @@ export function formatStatus(diff: PluginDiff): string {
 }
 
 export function runStatus(cwd: string, options: StatusOptions = {}): { output: string; exitCode: number } {
+  // Check global status
+  const settingsPath = getClaudeSettingsPath();
+  const settings = readClaudeSettings(settingsPath);
+  const hookInstalled = hasFettleHook(settings);
+  const skillInstalled = hasFettleSkill();
+
   const configPath = findConfigPath(cwd);
 
   if (!configPath) {
+    // No project config - show global status and hint
+    const globalStatus = formatGlobalStatus({
+      hookInstalled,
+      skillInstalled,
+      profiles: [],
+    });
     return {
-      output: 'No fettle.toml found. Run `fettle init` to create one.',
+      output: `${globalStatus}\n\nNo project config. Run \`fettle init\` to create one.`,
       exitCode: 1,
     };
   }
@@ -136,6 +180,9 @@ export function runStatus(cwd: string, options: StatusOptions = {}): { output: s
     };
   }
 
+  // Get list of profiles being used
+  const profiles = config.profiles || [];
+
   const installed = listPlugins();
   const available = listAvailablePlugins();
   const diff = diffPluginsResolved(resolution.plugins, installed, projectRoot);
@@ -149,8 +196,15 @@ export function runStatus(cwd: string, options: StatusOptions = {}): { output: s
   const showRefreshTip = !options.refresh;
   const contextLine = formatContextLine(projectRoot, cwd);
 
+  // Format global status
+  const globalStatus = formatGlobalStatus({
+    hookInstalled,
+    skillInstalled,
+    profiles,
+  });
+
   return {
-    output: `${contextLine}${formatStatusResolved(statusDiff, showRefreshTip)}`,
+    output: `${globalStatus}\n\n${contextLine}${colors.header('Plugins:')}\n${formatStatusResolved(statusDiff, showRefreshTip)}`,
     exitCode: diff.missing.length > 0 ? 1 : 0,
   };
 }
