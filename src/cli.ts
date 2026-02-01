@@ -2,7 +2,7 @@
 import { program } from 'commander';
 import { runStatus } from './status.js';
 import { runApply } from './apply.js';
-import { runInit, getClaudeSettingsPath, getProjectConfigPath } from './init.js';
+import { runInit, getClaudeSettingsPath, getProjectConfigPath, getFettleSkillPath } from './init.js';
 import { getProfilesDir, resolveProjectRoot } from './context.js';
 import { confirm, input } from './prompt.js';
 import { colors, symbols } from './colors.js';
@@ -119,14 +119,17 @@ program
     const profilesDir = getProfilesDir();
     const projectRoot = resolveProjectRoot(process.cwd());
     const projectConfigPath = getProjectConfigPath(projectRoot);
+    const skillPath = getFettleSkillPath();
 
     let createProfile = false;
     let profileName = 'default';
     let createProjectConfig = false;
+    let createSkill = true; // Always create skill unless hook-only
 
     if (options.hookOnly) {
       createProfile = false;
       createProjectConfig = false;
+      createSkill = false;
     } else if (options.yes) {
       createProfile = true;
       createProjectConfig = true;
@@ -135,6 +138,7 @@ program
       console.log('Fettle - Context-aware plugin manager for Claude Code\n');
       console.log('This will:');
       console.log(`  - Add a SessionStart hook to ${settingsPath}`);
+      console.log(`  - Add a diagnostic skill to ${skillPath}`);
       console.log(`  - Create ${profilesDir}/ for shared plugin profiles`);
       console.log(`  - Create ${projectConfigPath} for this project\n`);
 
@@ -153,9 +157,10 @@ program
       profileName,
       projectRoot,
       createProjectConfig,
+      createSkill,
     });
 
-    if (result.alreadyInitialized && !result.profileCreated && !result.projectConfigCreated) {
+    if (result.alreadyInitialized && !result.profileCreated && !result.projectConfigCreated && !result.skillCreated) {
       console.log('\nFettle is already initialized.');
       process.exit(0);
     }
@@ -163,6 +168,9 @@ program
     console.log(`\n${colors.header('Created:')}`);
     if (result.hookAdded) {
       console.log(`  ${symbols.present} SessionStart hook added to ${settingsPath}`);
+    }
+    if (result.skillCreated) {
+      console.log(`  ${symbols.present} Diagnostic skill added to ${result.skillPath}`);
     }
     if (result.profileCreated) {
       console.log(`  ${symbols.present} ${result.profilePath}`);
@@ -182,6 +190,9 @@ program
       console.log(`  ${colors.dim('-')} Add plugins to your project config: ${result.projectConfigPath}`);
     }
     console.log(`  ${colors.dim('-')} Restart Claude to activate the hook`);
+    if (result.skillCreated) {
+      console.log(`  ${colors.dim('-')} Ask Claude to check your Fettle setup anytime`);
+    }
 
     process.exit(0);
   });

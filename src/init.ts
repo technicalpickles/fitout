@@ -69,6 +69,80 @@ export function getDefaultProfilePath(profilesDir: string, name: string): string
   return join(profilesDir, `${name}.toml`);
 }
 
+export function getSkillsDir(): string {
+  return join(homedir(), '.claude', 'skills');
+}
+
+export function getFettleSkillPath(): string {
+  return join(getSkillsDir(), 'fettle', 'SKILL.md');
+}
+
+export function createFettleSkill(): boolean {
+  const skillPath = getFettleSkillPath();
+
+  if (existsSync(skillPath)) {
+    return false; // Already exists
+  }
+
+  mkdirSync(dirname(skillPath), { recursive: true });
+
+  const content = `---
+name: fettle
+description: Use when checking Fettle plugin manager setup, diagnosing plugin issues, or validating that configured plugins are properly installed. Invoke when users ask about plugin status, mention fettle, or when plugin-related problems are suspected.
+---
+
+# Fettle Diagnostic
+
+Check that the Fettle plugin manager is properly configured and all plugins are in sync.
+
+## Diagnostic Steps
+
+### 1. Check Hook Installation
+
+Read \`~/.claude/settings.json\` and verify the Fettle hook exists:
+
+\`\`\`json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          { "type": "command", "command": "fettle apply --hook" }
+        ]
+      }
+    ]
+  }
+}
+\`\`\`
+
+If the hook is missing, suggest running \`fettle init\`.
+
+### 2. Check Plugin Status
+
+Run \`fettle status\` in the current project directory to check:
+- Config file exists and parses correctly
+- Profiles resolve without errors
+- Which plugins are present, missing, or extra
+
+### 3. Report Summary
+
+Provide a clear diagnostic summary:
+- **Hook:** Installed / Missing
+- **Config:** Found / Not found / Parse error
+- **Profiles:** OK / Errors (list them)
+- **Plugins:** X present, Y missing, Z extra
+
+If there are issues, suggest the appropriate fix:
+- Missing hook → \`fettle init --hook-only\`
+- Missing config → \`fettle init\`
+- Missing plugins → \`fettle apply\`
+- Outdated plugins → \`fettle update\`
+`;
+
+  writeFileSync(skillPath, content);
+  return true;
+}
+
 export function getProjectConfigPath(projectRoot: string): string {
   return join(projectRoot, '.claude', 'fettle.toml');
 }
@@ -121,6 +195,7 @@ export interface InitOptions {
   profileName?: string;
   projectRoot?: string;
   createProjectConfig?: boolean;
+  createSkill?: boolean;
 }
 
 export interface InitResult {
@@ -130,6 +205,8 @@ export interface InitResult {
   profilePath?: string;
   projectConfigCreated: boolean;
   projectConfigPath?: string;
+  skillCreated: boolean;
+  skillPath?: string;
 }
 
 export function runInit(options: InitOptions): InitResult {
@@ -140,6 +217,7 @@ export function runInit(options: InitOptions): InitResult {
     profileName = 'default',
     projectRoot,
     createProjectConfig: shouldCreateProjectConfig,
+    createSkill: shouldCreateSkill,
   } = options;
 
   const result: InitResult = {
@@ -147,6 +225,7 @@ export function runInit(options: InitOptions): InitResult {
     alreadyInitialized: false,
     profileCreated: false,
     projectConfigCreated: false,
+    skillCreated: false,
   };
 
   // Read existing settings
@@ -176,6 +255,12 @@ export function runInit(options: InitOptions): InitResult {
       projectRoot,
       createProfile ? profileName : undefined
     );
+  }
+
+  // Create skill if requested
+  if (shouldCreateSkill) {
+    result.skillPath = getFettleSkillPath();
+    result.skillCreated = createFettleSkill();
   }
 
   return result;

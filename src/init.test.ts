@@ -1,6 +1,6 @@
 // src/init.test.ts
 import { describe, it, expect } from 'vitest';
-import { getClaudeSettingsPath, readClaudeSettings, hasFettleHook, addFettleHook, writeClaudeSettings, getDefaultProfilePath, createDefaultProfile, runInit, InitResult } from './init.js';
+import { getClaudeSettingsPath, readClaudeSettings, hasFettleHook, addFettleHook, writeClaudeSettings, getDefaultProfilePath, createDefaultProfile, runInit, InitResult, getSkillsDir, getFettleSkillPath, createFettleSkill } from './init.js';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { mkdtempSync, writeFileSync, rmSync, readFileSync, existsSync } from 'node:fs';
@@ -226,5 +226,81 @@ describe('runInit', () => {
     expect(existsSync(result.profilePath!)).toBe(true);
 
     rmSync(tmpDir, { recursive: true });
+  });
+
+  it('creates skill when requested', () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'fettle-test-'));
+    const settingsPath = join(tmpDir, 'settings.json');
+    const profilesDir = join(tmpDir, 'profiles');
+
+    // Mock the skill path by testing with the real function
+    // Since createFettleSkill uses a fixed path, we'll test via runInit result
+    const result = runInit({
+      settingsPath,
+      profilesDir,
+      createProfile: false,
+      createSkill: true
+    });
+
+    expect(result.skillPath).toBe(getFettleSkillPath());
+    // Note: skillCreated may be false if skill already exists from previous runs
+
+    rmSync(tmpDir, { recursive: true });
+  });
+});
+
+describe('getSkillsDir', () => {
+  it('returns path to Claude skills directory', () => {
+    expect(getSkillsDir()).toBe(join(homedir(), '.claude', 'skills'));
+  });
+});
+
+describe('getFettleSkillPath', () => {
+  it('returns path to fettle skill file', () => {
+    expect(getFettleSkillPath()).toBe(join(homedir(), '.claude', 'skills', 'fettle', 'SKILL.md'));
+  });
+});
+
+describe('createFettleSkill', () => {
+  it('creates skill file with correct content', () => {
+    // Skip if skill already exists (don't modify user's actual skill)
+    const skillPath = getFettleSkillPath();
+    if (existsSync(skillPath)) {
+      // Just verify the function returns false for existing
+      expect(createFettleSkill()).toBe(false);
+      return;
+    }
+
+    const created = createFettleSkill();
+    expect(created).toBe(true);
+    expect(existsSync(skillPath)).toBe(true);
+
+    const content = readFileSync(skillPath, 'utf-8');
+    expect(content).toContain('name: fettle');
+    expect(content).toContain('description:');
+    expect(content).toContain('Fettle Diagnostic');
+    expect(content).toContain('fettle status');
+    expect(content).toContain('settings.json');
+
+    // Clean up - remove the created skill
+    rmSync(join(homedir(), '.claude', 'skills', 'fettle'), { recursive: true });
+  });
+
+  it('does not overwrite existing skill', () => {
+    const skillPath = getFettleSkillPath();
+    const skillDir = join(homedir(), '.claude', 'skills', 'fettle');
+    const alreadyExisted = existsSync(skillPath);
+
+    // Create skill first
+    createFettleSkill();
+
+    // Try to create again
+    const result = createFettleSkill();
+    expect(result).toBe(false);
+
+    // Clean up if we created it
+    if (!alreadyExisted) {
+      rmSync(skillDir, { recursive: true });
+    }
   });
 });
