@@ -18,6 +18,7 @@ import {
 import { getProfilesDir, resolveProjectRoot } from './context.js';
 import { confirm, input } from './prompt.js';
 import { colors, symbols, formatPath } from './colors.js';
+import { hasGlobalConfig, createGlobalConfig, getGlobalConfigPath, getGlobalConfigContent } from './globalConfig.js';
 import { refreshMarketplaces, listAvailablePlugins } from './marketplace.js';
 import { runUpdate, updatePlugin } from './update.js';
 import { listPlugins } from './claude.js';
@@ -208,9 +209,17 @@ program
       needsGlobalSetup = true;
     }
 
+    const globalConfigExists = hasGlobalConfig();
+    if (globalConfigExists) {
+      console.log(`  ${symbols.present} Global config`);
+    } else {
+      console.log(`  ${symbols.missing} Global config ${colors.dim('(optional)')}`);
+    }
+
     // Set up global components if needed
     let hookAdded = false;
     let skillCreated = false;
+    let globalConfigCreated = false;
     if (needsGlobalSetup) {
       console.log('');
       const setupGlobal = await confirm('Set up missing global components?');
@@ -225,6 +234,26 @@ program
         skillCreated = result.skillCreated;
         if (hookAdded) console.log(`  ${symbols.present} Hook installed`);
         if (skillCreated) console.log(`  ${symbols.present} Skill installed`);
+      }
+    }
+
+    // Offer to create global config if missing
+    if (!globalConfigExists) {
+      console.log('');
+      const createConfig = await confirm('Create global config for marketplaces?');
+      if (createConfig) {
+        // Show preview
+        const configContent = getGlobalConfigContent();
+        console.log(`\nReady to create ${formatPath(getGlobalConfigPath())}:`);
+        console.log(colors.dim('    ' + configContent.split('\n').join('\n    ')));
+
+        const confirmCreate = await confirm('Create?');
+        if (confirmCreate) {
+          globalConfigCreated = createGlobalConfig();
+          if (globalConfigCreated) {
+            console.log(`  ${symbols.present} Created ${formatPath(getGlobalConfigPath())}`);
+          }
+        }
       }
     }
 
@@ -291,7 +320,7 @@ program
 
     // Summary
     console.log('');
-    const anythingCreated = hookAdded || skillCreated || profileCreated || projectConfigCreated;
+    const anythingCreated = hookAdded || skillCreated || globalConfigCreated || profileCreated || projectConfigCreated;
     if (!anythingCreated && hookExists && skillExists && profileExists && configExists) {
       console.log(`${symbols.present} ${colors.success('Already initialized')}`);
     } else if (anythingCreated) {

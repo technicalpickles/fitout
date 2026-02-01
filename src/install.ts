@@ -5,6 +5,8 @@ import { listPlugins, installPlugin } from './claude.js';
 import { diffPluginsResolved } from './diff.js';
 import { resolveProfiles } from './profiles.js';
 import { colors, symbols, formatContextLine } from './colors.js';
+import { ensureMarketplaces } from './marketplace.js';
+import { hasGlobalConfig, getConfiguredMarketplaces } from './globalConfig.js';
 
 export interface InstallResult {
   installed: string[];
@@ -101,6 +103,21 @@ export function runInstall(cwd: string, options: { dryRun?: boolean; hook?: bool
       output: `Failed to read config: ${err instanceof Error ? err.message : 'Unknown error'}`,
       exitCode: 1,
     };
+  }
+
+  // Ensure configured marketplaces are installed (skip in hook mode for cleaner output)
+  if (!options.hook && hasGlobalConfig()) {
+    const marketplaces = getConfiguredMarketplaces();
+    if (Object.keys(marketplaces).length > 0) {
+      const marketplaceResult = ensureMarketplaces();
+      if (marketplaceResult.added.length > 0) {
+        console.log(colors.header('Marketplaces:'));
+        for (const name of marketplaceResult.added) {
+          console.log(`  ${symbols.install} ${name}`);
+        }
+        console.log('');
+      }
+    }
   }
 
   // Resolve profiles
