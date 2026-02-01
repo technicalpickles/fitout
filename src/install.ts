@@ -4,7 +4,7 @@ import { parseConfig, FettleConfig } from './config.js';
 import { listPlugins, installPlugin } from './claude.js';
 import { diffPluginsResolved } from './diff.js';
 import { resolveProfiles } from './profiles.js';
-import { colors, symbols } from './colors.js';
+import { colors, symbols, formatContextLine } from './colors.js';
 
 export interface InstallResult {
   installed: string[];
@@ -117,14 +117,16 @@ export function runInstall(cwd: string, options: { dryRun?: boolean; hook?: bool
   const installed = listPlugins();
   const diff = diffPluginsResolved(resolution.plugins, installed, projectRoot);
 
+  const contextLine = formatContextLine(projectRoot, cwd);
+
   if (options.dryRun) {
     if (diff.missing.length === 0) {
       return {
-        output: `${colors.header('Context:')} ${projectRoot}\n\n${symbols.present} ${colors.success(`All ${diff.present.length} plugins present`)}`,
+        output: `${contextLine}${symbols.present} ${colors.success(`All ${diff.present.length} plugins present`)}`,
         exitCode: 0,
       };
     }
-    const lines = [`${colors.header('Context:')} ${projectRoot}\n`, colors.header('Would install:')];
+    const lines = [contextLine + colors.header('Would install:')];
     for (const plugin of diff.missing) {
       lines.push(`  ${symbols.install} ${plugin.id}`);
     }
@@ -162,7 +164,7 @@ export function runInstall(cwd: string, options: { dryRun?: boolean; hook?: bool
   }
 
   return {
-    output: `${colors.header('Context:')} ${projectRoot}\n\n${formatInstallResult(result)}`,
+    output: `${contextLine}${formatInstallResult(result)}`,
     exitCode: result.failed.length > 0 ? 1 : 0,
   };
 }

@@ -4,7 +4,7 @@ import { parseConfig, FettleConfig } from './config.js';
 import { listPlugins, InstalledPlugin } from './claude.js';
 import { diffPlugins, PluginDiff, PluginDiffResolved, diffPluginsResolved } from './diff.js';
 import { resolveProfiles } from './profiles.js';
-import { colors, symbols, provenanceColor } from './colors.js';
+import { colors, symbols, provenanceColor, formatContextLine } from './colors.js';
 import { listAvailablePlugins, refreshMarketplaces } from './marketplace.js';
 import { findOutdatedPlugins, OutdatedPlugin } from './update.js';
 
@@ -147,9 +147,10 @@ export function runStatus(cwd: string, options: StatusOptions = {}): { output: s
   };
 
   const showRefreshTip = !options.refresh;
+  const contextLine = formatContextLine(projectRoot, cwd);
 
   return {
-    output: `${colors.header('Context:')} ${projectRoot}\n\n${formatStatusResolved(statusDiff, showRefreshTip)}`,
+    output: `${contextLine}${formatStatusResolved(statusDiff, showRefreshTip)}`,
     exitCode: diff.missing.length > 0 ? 1 : 0,
   };
 }
