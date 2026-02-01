@@ -81,6 +81,18 @@ export function getFettleSkillPath(): string {
   return join(getSkillsDir(), 'fettle', 'SKILL.md');
 }
 
+export function hasFettleSkill(): boolean {
+  return existsSync(getFettleSkillPath());
+}
+
+export function hasDefaultProfile(profilesDir: string, name: string = 'default'): boolean {
+  return existsSync(getDefaultProfilePath(profilesDir, name));
+}
+
+export function hasProjectConfig(projectRoot: string): boolean {
+  return existsSync(getProjectConfigPath(projectRoot));
+}
+
 export function createFettleSkill(): boolean {
   const skillPath = getFettleSkillPath();
 
@@ -151,6 +163,17 @@ export function getProjectConfigPath(projectRoot: string): string {
   return join(projectRoot, '.claude', 'fettle.toml');
 }
 
+export function getProjectConfigContent(profileName?: string): string {
+  const profileLine = profileName ? `profiles = ["${profileName}"]` : '# profiles = ["default"]';
+  return `# Fettle project config - plugins listed here apply to this project
+${profileLine}
+
+plugins = [
+  # "example-plugin@marketplace",
+]
+`;
+}
+
 export function createProjectConfig(projectRoot: string, profileName?: string): boolean {
   const configPath = getProjectConfigPath(projectRoot);
 
@@ -159,17 +182,7 @@ export function createProjectConfig(projectRoot: string, profileName?: string): 
   }
 
   mkdirSync(dirname(configPath), { recursive: true });
-
-  const profileLine = profileName ? `profiles = ["${profileName}"]` : '# profiles = ["default"]';
-  const content = `# Fettle project config - plugins listed here apply to this project
-${profileLine}
-
-plugins = [
-  # "example-plugin@marketplace",
-]
-`;
-
-  writeFileSync(configPath, content);
+  writeFileSync(configPath, getProjectConfigContent(profileName));
   return true;
 }
 

@@ -2,10 +2,22 @@
 import { program } from 'commander';
 import { runStatus } from './status.js';
 import { runInstall } from './install.js';
-import { runInit, getClaudeSettingsPath, getProjectConfigPath, getFettleSkillPath } from './init.js';
+import {
+  runInit,
+  getClaudeSettingsPath,
+  getProjectConfigPath,
+  getFettleSkillPath,
+  readClaudeSettings,
+  hasFettleHook,
+  hasFettleSkill,
+  hasDefaultProfile,
+  hasProjectConfig,
+  getProjectConfigContent,
+  getDefaultProfilePath,
+} from './init.js';
 import { getProfilesDir, resolveProjectRoot } from './context.js';
 import { confirm, input } from './prompt.js';
-import { colors, symbols } from './colors.js';
+import { colors, symbols, formatPath } from './colors.js';
 import { refreshMarketplaces, listAvailablePlugins } from './marketplace.js';
 import { runUpdate, updatePlugin } from './update.js';
 import { listPlugins } from './claude.js';
@@ -124,77 +136,166 @@ program
     const projectConfigPath = getProjectConfigPath(projectRoot);
     const skillPath = getFettleSkillPath();
 
-    let createProfile = false;
-    let profileName = 'default';
-    let createProjectConfig = false;
-    let createSkill = true; // Always create skill unless hook-only
+    // Check current state
+    const settings = readClaudeSettings(settingsPath);
+    const hookExists = hasFettleHook(settings);
+    const skillExists = hasFettleSkill();
+    const profileExists = hasDefaultProfile(profilesDir);
+    const configExists = hasProjectConfig(projectRoot);
 
+    // Handle --hook-only mode
     if (options.hookOnly) {
-      createProfile = false;
-      createProjectConfig = false;
-      createSkill = false;
-    } else if (options.yes) {
-      createProfile = true;
-      createProjectConfig = true;
-    } else {
-      // Interactive mode
-      console.log('Fettle - Context-aware plugin manager for Claude Code\n');
-      console.log('This will:');
-      console.log(`  - Add a SessionStart hook to ${settingsPath}`);
-      console.log(`  - Add a diagnostic skill to ${skillPath}`);
-      console.log(`  - Create ${profilesDir}/ for shared plugin profiles`);
-      console.log(`  - Create ${projectConfigPath} for this project\n`);
-
-      createProfile = await confirm('Create a default profile?');
-      if (createProfile) {
-        profileName = await input('Profile name', 'default');
+      if (hookExists) {
+        console.log(`${symbols.present} Hook already installed`);
+        process.exit(0);
       }
-
-      createProjectConfig = await confirm('Create project config (.claude/fettle.toml)?');
-    }
-
-    const result = runInit({
-      settingsPath,
-      profilesDir,
-      createProfile,
-      profileName,
-      projectRoot,
-      createProjectConfig,
-      createSkill,
-    });
-
-    if (result.alreadyInitialized && !result.profileCreated && !result.projectConfigCreated && !result.skillCreated) {
-      console.log('\nFettle is already initialized.');
+      const result = runInit({
+        settingsPath,
+        profilesDir,
+        createProfile: false,
+        createSkill: false,
+      });
+      console.log(`${symbols.present} SessionStart hook added to ${formatPath(settingsPath)}`);
+      console.log(colors.dim('  Restart Claude to activate'));
       process.exit(0);
     }
 
-    console.log(`\n${colors.header('Created:')}`);
-    if (result.hookAdded) {
-      console.log(`  ${symbols.present} SessionStart hook added to ${settingsPath}`);
-    }
-    if (result.skillCreated) {
-      console.log(`  ${symbols.present} Diagnostic skill added to ${result.skillPath}`);
-    }
-    if (result.profileCreated) {
-      console.log(`  ${symbols.present} ${result.profilePath}`);
-    }
-    if (result.projectConfigCreated) {
-      console.log(`  ${symbols.present} ${result.projectConfigPath}`);
-    }
-    if (result.alreadyInitialized) {
-      console.log(colors.dim('  (hook already existed)'));
+    // Handle --yes mode (non-interactive)
+    if (options.yes) {
+      const result = runInit({
+        settingsPath,
+        profilesDir,
+        createProfile: true,
+        profileName: 'default',
+        projectRoot,
+        createProjectConfig: true,
+        createSkill: true,
+      });
+
+      const created: string[] = [];
+      if (result.hookAdded) created.push('hook');
+      if (result.skillCreated) created.push('skill');
+      if (result.profileCreated) created.push('profile');
+      if (result.projectConfigCreated) created.push('project config');
+
+      if (created.length === 0) {
+        console.log(`${symbols.present} Already initialized`);
+      } else {
+        console.log(`${symbols.present} Created: ${created.join(', ')}`);
+        console.log(colors.dim('  Restart Claude to activate'));
+      }
+      process.exit(0);
     }
 
-    console.log(`\n${colors.header('Next steps:')}`);
-    if (result.profileCreated) {
-      console.log(`  ${colors.dim('-')} Add plugins to your profile: ${result.profilePath}`);
+    // Interactive phased mode
+    console.log('Checking Fettle setup...\n');
+
+    // Phase 1: Global setup
+    console.log(colors.header('Global:'));
+    let needsGlobalSetup = false;
+
+    if (hookExists) {
+      console.log(`  ${symbols.present} SessionStart hook`);
+    } else {
+      console.log(`  ${symbols.missing} SessionStart hook ${colors.dim('(missing)')}`);
+      needsGlobalSetup = true;
     }
-    if (result.projectConfigCreated) {
-      console.log(`  ${colors.dim('-')} Add plugins to your project config: ${result.projectConfigPath}`);
+
+    if (skillExists) {
+      console.log(`  ${symbols.present} Diagnostic skill`);
+    } else {
+      console.log(`  ${symbols.missing} Diagnostic skill ${colors.dim('(missing)')}`);
+      needsGlobalSetup = true;
     }
-    console.log(`  ${colors.dim('-')} Restart Claude to activate the hook`);
-    if (result.skillCreated) {
-      console.log(`  ${colors.dim('-')} Ask Claude to check your Fettle setup anytime`);
+
+    // Set up global components if needed
+    let hookAdded = false;
+    let skillCreated = false;
+    if (needsGlobalSetup) {
+      console.log('');
+      const setupGlobal = await confirm('Set up missing global components?');
+      if (setupGlobal) {
+        const result = runInit({
+          settingsPath,
+          profilesDir,
+          createProfile: false,
+          createSkill: !skillExists,
+        });
+        hookAdded = result.hookAdded;
+        skillCreated = result.skillCreated;
+        if (hookAdded) console.log(`  ${symbols.present} Hook installed`);
+        if (skillCreated) console.log(`  ${symbols.present} Skill installed`);
+      }
+    }
+
+    // Phase 2: Default profile
+    console.log('');
+    console.log(colors.header('Profile:'));
+    let profileCreated = false;
+    let profileName = 'default';
+
+    if (profileExists) {
+      console.log(`  ${symbols.present} Default profile`);
+    } else {
+      console.log(`  ${symbols.missing} Default profile ${colors.dim('(missing)')}`);
+      console.log('');
+      const createProfile = await confirm('Create a default profile?');
+      if (createProfile) {
+        profileName = await input('Profile name', 'default');
+        const result = runInit({
+          settingsPath,
+          profilesDir,
+          createProfile: true,
+          profileName,
+          createSkill: false,
+        });
+        profileCreated = result.profileCreated;
+        if (profileCreated) {
+          console.log(`  ${symbols.present} Created ${formatPath(getDefaultProfilePath(profilesDir, profileName))}`);
+        }
+      }
+    }
+
+    // Phase 3: Project config
+    console.log('');
+    console.log(colors.header('Project:'));
+    let projectConfigCreated = false;
+
+    if (configExists) {
+      console.log(`  ${symbols.present} Project config`);
+    } else {
+      console.log(`  ${symbols.missing} Project config ${colors.dim('(missing)')}`);
+      console.log('');
+
+      // Show preview
+      const configContent = getProjectConfigContent(profileCreated || profileExists ? profileName : undefined);
+      console.log(`Ready to create ${formatPath(projectConfigPath)}:`);
+      console.log(colors.dim('    ' + configContent.split('\n').join('\n    ')));
+
+      const createConfig = await confirm('Create project config?');
+      if (createConfig) {
+        const result = runInit({
+          settingsPath,
+          profilesDir,
+          createProfile: false,
+          projectRoot,
+          createProjectConfig: true,
+          createSkill: false,
+        });
+        projectConfigCreated = result.projectConfigCreated;
+        if (projectConfigCreated) {
+          console.log(`  ${symbols.present} Created ${formatPath(projectConfigPath)}`);
+        }
+      }
+    }
+
+    // Summary
+    console.log('');
+    const anythingCreated = hookAdded || skillCreated || profileCreated || projectConfigCreated;
+    if (!anythingCreated && hookExists && skillExists && profileExists && configExists) {
+      console.log(`${symbols.present} ${colors.success('Already initialized')}`);
+    } else if (anythingCreated) {
+      console.log(colors.dim('Restart Claude to activate changes.'));
     }
 
     process.exit(0);
