@@ -130,8 +130,12 @@ export function runInstall(cwd: string, options: { dryRun?: boolean; hook?: bool
   const resolution = resolveProfiles(profilesDir, config);
 
   if (resolution.errors.length > 0) {
+    const message = `Profile errors:\n${resolution.errors.map((e) => `  - ${e}`).join('\n')}`;
+    if (options.hook) {
+      writeHookError(message);
+    }
     return {
-      output: `${colors.header('Profile errors:')}\n${resolution.errors.map((e) => `  ${symbols.missing} ${e}`).join('\n')}`,
+      output: options.hook ? '' : `${colors.header('Profile errors:')}\n${resolution.errors.map((e) => `  ${symbols.missing} ${e}`).join('\n')}`,
       exitCode: 1,
     };
   }
