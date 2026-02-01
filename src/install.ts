@@ -178,7 +178,10 @@ export function runInstall(cwd: string, options: { dryRun?: boolean; hook?: bool
     }
   }
 
-  // In hook mode: stdout for success message, stderr for errors
+  // Hook mode output philosophy (see docs/design/hook-output-philosophy.md):
+  // - Silent when nothing to do (all plugins present) - don't waste Claude's context
+  // - Loud when we took action (installed plugins) - Claude may need to inform user
+  // - Errors already written to stderr above with [fettle] prefix
   if (options.hook) {
     if (result.failed.length > 0) {
       return {
