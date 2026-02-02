@@ -4,9 +4,7 @@ import { runStatus } from './status.js';
 import { runInstall } from './install.js';
 import {
   runInit,
-  getClaudeSettingsPath,
   getProjectConfigPath,
-  getFettleSkillPath,
   readClaudeSettings,
   hasFettleHook,
   hasFettleSkill,
@@ -15,6 +13,7 @@ import {
   getProjectConfigContent,
   getDefaultProfilePath,
 } from './init.js';
+import { getClaudeSettingsPath, getFettleSkillPath } from './paths.js';
 import { getProfilesDir, resolveProjectRoot } from './context.js';
 import { confirm, input } from './prompt.js';
 import { colors, symbols, formatPath } from './colors.js';

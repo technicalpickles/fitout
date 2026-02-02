@@ -7,7 +7,8 @@ import { resolveProfiles } from './profiles.js';
 import { colors, symbols, provenanceColor, formatContextLine } from './colors.js';
 import { listAvailablePlugins, refreshMarketplaces } from './marketplace.js';
 import { findOutdatedPlugins, OutdatedPlugin } from './update.js';
-import { getClaudeSettingsPath, readClaudeSettings, hasFettleHook, hasFettleSkill } from './init.js';
+import { readClaudeSettings, hasFettleHook, hasFettleSkill } from './init.js';
+import { getClaudeSettingsPath } from './paths.js';
 
 export interface StatusOptions {
   refresh?: boolean;
