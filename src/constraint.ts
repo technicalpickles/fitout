@@ -1,4 +1,6 @@
 // src/constraint.ts
+import { compareVersions } from './update.js';
+
 export interface ParsedPlugin {
   id: string;
   constraint: string | null;
@@ -101,4 +103,13 @@ export function parsePluginList(inputs: string[]): ParseResult {
   }
 
   return { plugins, errors };
+}
+
+/**
+ * Check if installed version satisfies a minimum version constraint.
+ * Returns true if constraint is null (no constraint) or version >= constraint.
+ */
+export function satisfiesConstraint(version: string, constraint: string | null): boolean {
+  if (constraint === null) return true;
+  return compareVersions(version, constraint) >= 0;
 }

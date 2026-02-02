@@ -1,6 +1,6 @@
 // src/constraint.test.ts
 import { describe, it, expect } from 'vitest';
-import { parsePluginString, parsePluginList, isParsedPlugin, isParseError, ParsedPlugin, ParseError } from './constraint.js';
+import { parsePluginString, parsePluginList, isParsedPlugin, isParseError, satisfiesConstraint, ParsedPlugin, ParseError } from './constraint.js';
 
 describe('parsePluginString', () => {
   it('parses plugin without constraint', () => {
@@ -127,5 +127,34 @@ describe('type guards', () => {
   it('isParseError returns false for valid parse', () => {
     const result = parsePluginString('git@marketplace >= 1.0.0');
     expect(isParseError(result)).toBe(false);
+  });
+});
+
+describe('satisfiesConstraint', () => {
+  it('returns true when no constraint', () => {
+    expect(satisfiesConstraint('1.0.0', null)).toBe(true);
+  });
+
+  it('returns true when version equals constraint', () => {
+    expect(satisfiesConstraint('1.0.0', '1.0.0')).toBe(true);
+  });
+
+  it('returns true when version exceeds constraint', () => {
+    expect(satisfiesConstraint('2.0.0', '1.0.0')).toBe(true);
+  });
+
+  it('returns false when version below constraint', () => {
+    expect(satisfiesConstraint('1.0.0', '2.0.0')).toBe(false);
+  });
+
+  it('handles different version lengths', () => {
+    expect(satisfiesConstraint('1.0', '1.0.0')).toBe(true);
+    expect(satisfiesConstraint('1.0.0', '1.0')).toBe(true);
+    expect(satisfiesConstraint('1', '1.0.0')).toBe(true);
+  });
+
+  it('compares multi-digit versions correctly', () => {
+    expect(satisfiesConstraint('1.10.0', '1.9.0')).toBe(true);
+    expect(satisfiesConstraint('1.9.0', '1.10.0')).toBe(false);
   });
 });
