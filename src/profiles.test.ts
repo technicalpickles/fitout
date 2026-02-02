@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { loadProfile, resolveProfiles, ResolvedPlugin } from './profiles.js';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { loadProfile, resolveProfiles } from './profiles.js';
 import { existsSync, readFileSync } from 'node:fs';
 
 vi.mock('node:fs');
@@ -45,7 +45,7 @@ describe('resolveProfiles', () => {
   });
 
   it('returns project plugins when no profiles', () => {
-    vi.mocked(existsSync).mockReturnValue(false); // no default
+    vi.mocked(existsSync).mockReturnValue(false);
 
     const result = resolveProfiles('/profiles', {
       plugins: ['project-plugin@registry'],
@@ -53,9 +53,22 @@ describe('resolveProfiles', () => {
     });
 
     expect(result.plugins).toEqual([
-      { id: 'project-plugin@registry', source: 'project' },
+      { id: 'project-plugin@registry', source: 'project', constraint: null },
     ]);
     expect(result.errors).toEqual([]);
+  });
+
+  it('parses plugin constraints', () => {
+    vi.mocked(existsSync).mockReturnValue(false);
+
+    const result = resolveProfiles('/profiles', {
+      plugins: ['plugin@registry >= 1.2.0'],
+      profiles: [],
+    });
+
+    expect(result.plugins).toEqual([
+      { id: 'plugin@registry', source: 'project', constraint: '1.2.0' },
+    ]);
   });
 
   it('auto-includes default profile when exists', () => {
@@ -68,8 +81,8 @@ describe('resolveProfiles', () => {
     });
 
     expect(result.plugins).toEqual([
-      { id: 'default-plugin@registry', source: 'default' },
-      { id: 'project-plugin@registry', source: 'project' },
+      { id: 'default-plugin@registry', source: 'default', constraint: null },
+      { id: 'project-plugin@registry', source: 'project', constraint: null },
     ]);
   });
 
@@ -115,6 +128,7 @@ describe('resolveProfiles', () => {
     expect(result.plugins).toContainEqual({
       id: 'backend-plugin@registry',
       source: 'backend',
+      constraint: null,
     });
   });
 
@@ -127,9 +141,53 @@ describe('resolveProfiles', () => {
       profiles: [],
     });
 
-    // default loads first, so it wins
     const shared = result.plugins.filter((p) => p.id === 'shared-plugin@registry');
     expect(shared).toHaveLength(1);
     expect(shared[0].source).toBe('default');
+  });
+
+  it('merges constraints - higher wins', () => {
+    vi.mocked(existsSync).mockReturnValue(true);
+    vi.mocked(readFileSync).mockReturnValue(`plugins = ["plugin@registry >= 2.0.0"]`);
+
+    const result = resolveProfiles('/profiles', {
+      plugins: ['plugin@registry >= 1.0.0'],
+      profiles: [],
+    });
+
+    const plugin = result.plugins.find((p) => p.id === 'plugin@registry');
+    expect(plugin?.constraint).toBe('2.0.0');
+  });
+
+  it('tracks when project constraint is overridden', () => {
+    vi.mocked(existsSync).mockReturnValue(true);
+    vi.mocked(readFileSync).mockReturnValue(`plugins = ["plugin@registry >= 2.0.0"]`);
+
+    const result = resolveProfiles('/profiles', {
+      plugins: ['plugin@registry >= 1.0.0'],
+      profiles: [],
+    });
+
+    expect(result.constraintOverrides).toEqual([
+      {
+        pluginId: 'plugin@registry',
+        projectConstraint: '1.0.0',
+        winningConstraint: '2.0.0',
+        winningSource: 'default',
+      },
+    ]);
+  });
+
+  it('collects parse errors', () => {
+    vi.mocked(existsSync).mockReturnValue(false);
+
+    const result = resolveProfiles('/profiles', {
+      plugins: ['plugin@registry >= abc'],
+      profiles: [],
+    });
+
+    expect(result.errors).toContainEqual(
+      expect.stringContaining('Invalid version "abc"')
+    );
   });
 });
