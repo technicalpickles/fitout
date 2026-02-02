@@ -113,3 +113,13 @@ export function satisfiesConstraint(version: string, constraint: string | null):
   if (constraint === null) return true;
   return compareVersions(version, constraint) >= 0;
 }
+
+/**
+ * Merge two constraints, returning the higher minimum version.
+ * Used when same plugin appears in multiple sources (profile + project).
+ */
+export function mergeConstraints(existing: string | null, incoming: string | null): string | null {
+  if (existing === null) return incoming;
+  if (incoming === null) return existing;
+  return compareVersions(existing, incoming) >= 0 ? existing : incoming;
+}

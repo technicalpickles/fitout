@@ -1,6 +1,6 @@
 // src/constraint.test.ts
 import { describe, it, expect } from 'vitest';
-import { parsePluginString, parsePluginList, isParsedPlugin, isParseError, satisfiesConstraint, ParsedPlugin, ParseError } from './constraint.js';
+import { parsePluginString, parsePluginList, isParsedPlugin, isParseError, satisfiesConstraint, mergeConstraints, ParsedPlugin, ParseError } from './constraint.js';
 
 describe('parsePluginString', () => {
   it('parses plugin without constraint', () => {
@@ -156,5 +156,28 @@ describe('satisfiesConstraint', () => {
   it('compares multi-digit versions correctly', () => {
     expect(satisfiesConstraint('1.10.0', '1.9.0')).toBe(true);
     expect(satisfiesConstraint('1.9.0', '1.10.0')).toBe(false);
+  });
+});
+
+describe('mergeConstraints', () => {
+  it('returns incoming when existing is null', () => {
+    expect(mergeConstraints(null, '1.0.0')).toBe('1.0.0');
+  });
+
+  it('returns existing when incoming is null', () => {
+    expect(mergeConstraints('1.0.0', null)).toBe('1.0.0');
+  });
+
+  it('returns null when both are null', () => {
+    expect(mergeConstraints(null, null)).toBe(null);
+  });
+
+  it('returns higher version when both exist', () => {
+    expect(mergeConstraints('1.0.0', '2.0.0')).toBe('2.0.0');
+    expect(mergeConstraints('2.0.0', '1.0.0')).toBe('2.0.0');
+  });
+
+  it('returns either when equal', () => {
+    expect(mergeConstraints('1.0.0', '1.0.0')).toBe('1.0.0');
   });
 });
