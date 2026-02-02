@@ -1,6 +1,0 @@
-# Fettle project config - plugins listed here apply to this project
-profiles = ["default", "superpowers"]
-
-plugins = [
-  # "example-plugin@marketplace",
-]

@@ -1,5 +1,5 @@
 {
-  "name": "fettle",
+  "name": "@technicalpickles/fettle",
   "version": "0.1.0",
   "description": "Context-aware plugin manager for Claude Code",
   "type": "module",
@@ -21,8 +21,16 @@
     "plugins",
     "cli"
   ],
-  "author": "",
+  "author": "Josh Nichols",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/technicalpickles/fettle.git"
+  },
+  "homepage": "https://github.com/technicalpickles/fettle#readme",
+  "bugs": {
+    "url": "https://github.com/technicalpickles/fettle/issues"
+  },
   "dependencies": {
     "@pnpm/tabtab": "^0.5.4",
     "chalk": "^5.6.2",

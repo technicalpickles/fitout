@@ -1,11 +1,13 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
 import { writeFileSync, unlinkSync, existsSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { findConfigPath, resolveProjectRoot, getProfilesDir } from './context.js';
 
-// Use this project's directory as a test fixture (it's a real git repo)
-const PROJECT_ROOT = '/Users/josh.nichols/workspace/fettle';
+// Derive project root from this file's location (portable across machines)
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const PROJECT_ROOT = dirname(__dirname); // src/../ = project root
 const TEST_CONFIG_PATH = join(PROJECT_ROOT, '.claude', 'fettle.toml');
 
 describe('resolveProjectRoot', () => {

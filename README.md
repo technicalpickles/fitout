@@ -1,5 +1,7 @@
 # Fettle
 
+[![CI](https://github.com/technicalpickles/fettle/actions/workflows/ci.yml/badge.svg)](https://github.com/technicalpickles/fettle/actions/workflows/ci.yml)
+
 Context-aware plugin manager for Claude Code.
 
 ## The Problem
