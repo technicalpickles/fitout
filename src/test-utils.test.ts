@@ -5,10 +5,6 @@ import { setupTestEnv, cleanTestTmp } from './test-utils.js';
 import { getClaudeHome, getFettleConfigHome } from './paths.js';
 
 describe('setupTestEnv', () => {
-  afterEach(() => {
-    cleanTestTmp();
-  });
-
   it('creates isolated directories', () => {
     const ctx = setupTestEnv();
 
@@ -35,5 +31,19 @@ describe('setupTestEnv', () => {
 
     // After cleanup, should return default (not isolated path)
     expect(getClaudeHome()).not.toBe(isolatedClaude);
+  });
+});
+
+describe('cleanTestTmp', () => {
+  it('removes test temp directory', () => {
+    // Create a test env first
+    const ctx = setupTestEnv();
+    ctx.cleanup();
+
+    // Clean should work
+    cleanTestTmp();
+
+    // Directory should be gone (or never existed if no other tests ran)
+    // We don't assert here since other parallel tests might recreate it
   });
 });

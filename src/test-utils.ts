@@ -38,5 +38,9 @@ export function setupTestEnv(): TestContext {
 }
 
 export function cleanTestTmp(): void {
-  rmSync(TEST_TMP_ROOT, { recursive: true, force: true });
+  try {
+    rmSync(TEST_TMP_ROOT, { recursive: true, force: true, maxRetries: 3 });
+  } catch {
+    // Ignore errors - directory might be in use by parallel tests
+  }
 }
