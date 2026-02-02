@@ -2,17 +2,28 @@ import { readFileSync } from 'node:fs';
 import { findConfigPath, resolveProjectRoot, getProfilesDir } from './context.js';
 import { parseConfig, FettleConfig } from './config.js';
 import { listPlugins, installPlugin } from './claude.js';
-import { diffPluginsResolved } from './diff.js';
+import { diffPluginsResolved, PresentPluginResolved } from './diff.js';
 import { resolveProfiles } from './profiles.js';
 import { colors, symbols, formatContextLine } from './colors.js';
-import { ensureMarketplaces } from './marketplace.js';
+import { ensureMarketplaces, refreshMarketplaces, listAvailablePlugins, AvailablePlugin } from './marketplace.js';
 import { hasGlobalConfig, getConfiguredMarketplaces } from './globalConfig.js';
 import { writeHookError } from './hookError.js';
+import { satisfiesConstraint } from './constraint.js';
+import { updatePlugin } from './update.js';
+
+export interface UnsatisfiableConstraint {
+  pluginId: string;
+  installedVersion: string;
+  requiredConstraint: string;
+  marketplaceVersion: string | null;
+}
 
 export interface InstallResult {
   installed: string[];
+  updated: string[];
   failed: { id: string; error: string }[];
   alreadyPresent: string[];
+  unsatisfiable: UnsatisfiableConstraint[];
 }
 
 export function formatInstallResultHook(result: InstallResult): string {
@@ -39,7 +50,7 @@ export function formatInstallResultHook(result: InstallResult): string {
 export function formatInstallResult(result: InstallResult): string {
   const lines: string[] = [];
 
-  if (result.installed.length === 0 && result.failed.length === 0) {
+  if (result.installed.length === 0 && result.updated.length === 0 && result.failed.length === 0 && result.unsatisfiable.length === 0) {
     lines.push(`${symbols.present} ${colors.success(`All ${result.alreadyPresent.length} plugins present`)}`);
     return lines.join('\n');
   }
@@ -51,23 +62,63 @@ export function formatInstallResult(result: InstallResult): string {
     }
   }
 
+  if (result.updated.length > 0) {
+    if (lines.length > 0) lines.push('');
+    lines.push(colors.header('Updated:'));
+    for (const id of result.updated) {
+      lines.push(`  ${symbols.outdated} ${id}`);
+    }
+  }
+
   if (result.failed.length > 0) {
-    if (result.installed.length > 0) lines.push('');
+    if (lines.length > 0) lines.push('');
     lines.push(colors.header('Failed:'));
     for (const { id, error } of result.failed) {
       lines.push(`  ${symbols.missing} ${id} ${colors.dim(`- ${error}`)}`);
     }
   }
 
+  if (result.unsatisfiable.length > 0) {
+    if (lines.length > 0) lines.push('');
+    lines.push(colors.header('Cannot satisfy constraints:'));
+    for (const u of result.unsatisfiable) {
+      lines.push(`  ${symbols.missing} ${u.pluginId}`);
+      lines.push(`    Installed: ${u.installedVersion}`);
+      lines.push(`    Required:  >= ${u.requiredConstraint}`);
+      lines.push(`    Marketplace: ${u.marketplaceVersion || 'not found'}`);
+    }
+  }
+
   const summary = [
-    result.installed.length > 0 ? colors.action(`${result.installed.length} plugin${result.installed.length > 1 ? 's' : ''} installed`) : null,
+    result.installed.length > 0 ? colors.action(`${result.installed.length} installed`) : null,
+    result.updated.length > 0 ? colors.action(`${result.updated.length} updated`) : null,
     result.failed.length > 0 ? colors.error(`${result.failed.length} failed`) : null,
+    result.unsatisfiable.length > 0 ? colors.error(`${result.unsatisfiable.length} unsatisfiable`) : null,
   ].filter(Boolean).join(', ');
 
   lines.push('');
   lines.push(summary);
 
   return lines.join('\n');
+}
+
+function checkConstraintSatisfaction(
+  present: PresentPluginResolved[]
+): { satisfied: PresentPluginResolved[]; unsatisfied: PresentPluginResolved[] } {
+  const satisfied: PresentPluginResolved[] = [];
+  const unsatisfied: PresentPluginResolved[] = [];
+
+  for (const plugin of present) {
+    if (plugin.constraint === null) {
+      satisfied.push(plugin);
+    } else if (satisfiesConstraint(plugin.version, plugin.constraint)) {
+      satisfied.push(plugin);
+    } else {
+      unsatisfied.push(plugin);
+    }
+  }
+
+  return { satisfied, unsatisfied };
 }
 
 export function runInstall(cwd: string, options: { dryRun?: boolean; hook?: boolean } = {}): { output: string; exitCode: number } {
@@ -145,6 +196,48 @@ export function runInstall(cwd: string, options: { dryRun?: boolean; hook?: bool
 
   const contextLine = formatContextLine(projectRoot, cwd);
 
+  // Check constraint satisfaction for present plugins
+  const { satisfied, unsatisfied } = checkConstraintSatisfaction(diff.present);
+
+  // Handle unsatisfied constraints
+  let updated: string[] = [];
+  let unsatisfiable: UnsatisfiableConstraint[] = [];
+
+  if (unsatisfied.length > 0 && !options.hook) {
+    // Refresh marketplace to get latest versions
+    console.log('Checking for updates to satisfy constraints...');
+    refreshMarketplaces();
+    const available = listAvailablePlugins();
+    const availableMap = new Map(available.map((p) => [p.id, p]));
+
+    for (const plugin of unsatisfied) {
+      const avail = availableMap.get(plugin.id);
+      if (avail && satisfiesConstraint(avail.version, plugin.constraint!)) {
+        // Marketplace has satisfying version - update
+        try {
+          updatePlugin(plugin.id);
+          updated.push(plugin.id);
+        } catch (err) {
+          // Fall through to unsatisfiable
+          unsatisfiable.push({
+            pluginId: plugin.id,
+            installedVersion: plugin.version,
+            requiredConstraint: plugin.constraint!,
+            marketplaceVersion: avail?.version || null,
+          });
+        }
+      } else {
+        // Marketplace cannot satisfy
+        unsatisfiable.push({
+          pluginId: plugin.id,
+          installedVersion: plugin.version,
+          requiredConstraint: plugin.constraint!,
+          marketplaceVersion: avail?.version || null,
+        });
+      }
+    }
+  }
+
   if (options.dryRun) {
     if (diff.missing.length === 0) {
       return {
@@ -161,8 +254,10 @@ export function runInstall(cwd: string, options: { dryRun?: boolean; hook?: bool
 
   const result: InstallResult = {
     installed: [],
+    updated,
     failed: [],
-    alreadyPresent: diff.present.map((p) => p.id),
+    alreadyPresent: satisfied.map((p) => p.id),
+    unsatisfiable,
   };
 
   for (const plugin of diff.missing) {
@@ -197,6 +292,6 @@ export function runInstall(cwd: string, options: { dryRun?: boolean; hook?: bool
 
   return {
     output: `${contextLine}${formatInstallResult(result)}`,
-    exitCode: result.failed.length > 0 ? 1 : 0,
+    exitCode: result.failed.length > 0 || result.unsatisfiable.length > 0 ? 1 : 0,
   };
 }
