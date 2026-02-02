@@ -68,12 +68,13 @@ program
 program
   .command('update [plugins...]')
   .description('Update outdated plugins (all if no plugins specified)')
-  .option('--refresh', 'Refresh marketplace data before updating')
+  .option('--offline', 'Skip marketplace refresh, use cached data')
   .option('--dry-run', 'Show what would be updated without applying')
   .action((plugins, options) => {
     const projectRoot = resolveProjectRoot(process.cwd());
 
-    if (options.refresh) {
+    // Refresh by default, unless --offline
+    if (!options.offline) {
       console.log('Refreshing marketplaces...');
       refreshMarketplaces();
     }
