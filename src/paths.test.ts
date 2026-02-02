@@ -22,17 +22,17 @@ describe('paths', () => {
     });
   });
 
-  describe('getFettleConfigHome', () => {
-    it('returns ~/.config/fettle by default', async () => {
-      const { getFettleConfigHome } = await import('./paths.js');
-      expect(getFettleConfigHome()).toBe(join(homedir(), '.config', 'fettle'));
+  describe('getFitoutConfigHome', () => {
+    it('returns ~/.config/fitout by default', async () => {
+      const { getFitoutConfigHome } = await import('./paths.js');
+      expect(getFitoutConfigHome()).toBe(join(homedir(), '.config', 'fitout'));
     });
 
-    it('respects FETTLE_CONFIG_HOME env var', async () => {
-      vi.stubEnv('FETTLE_CONFIG_HOME', '/custom/fettle');
+    it('respects FITOUT_CONFIG_HOME env var', async () => {
+      vi.stubEnv('FITOUT_CONFIG_HOME', '/custom/fitout');
       vi.resetModules();
-      const { getFettleConfigHome } = await import('./paths.js');
-      expect(getFettleConfigHome()).toBe('/custom/fettle');
+      const { getFitoutConfigHome } = await import('./paths.js');
+      expect(getFitoutConfigHome()).toBe('/custom/fitout');
     });
   });
 
@@ -51,11 +51,11 @@ describe('paths', () => {
       expect(getClaudeSkillsDir()).toBe('/test/claude/skills');
     });
 
-    it('getFettleSkillPath builds on getClaudeSkillsDir', async () => {
+    it('getFitoutSkillPath builds on getClaudeSkillsDir', async () => {
       vi.stubEnv('CLAUDE_CONFIG_DIR', '/test/claude');
       vi.resetModules();
-      const { getFettleSkillPath } = await import('./paths.js');
-      expect(getFettleSkillPath()).toBe('/test/claude/skills/fettle/SKILL.md');
+      const { getFitoutSkillPath } = await import('./paths.js');
+      expect(getFitoutSkillPath()).toBe('/test/claude/skills/fitout/SKILL.md');
     });
 
     it('getMarketplacesDir builds on getClaudeHome', async () => {
@@ -65,18 +65,18 @@ describe('paths', () => {
       expect(getMarketplacesDir()).toBe('/test/claude/plugins/marketplaces');
     });
 
-    it('getProfilesDir builds on getFettleConfigHome', async () => {
-      vi.stubEnv('FETTLE_CONFIG_HOME', '/test/fettle');
+    it('getProfilesDir builds on getFitoutConfigHome', async () => {
+      vi.stubEnv('FITOUT_CONFIG_HOME', '/test/fitout');
       vi.resetModules();
       const { getProfilesDir } = await import('./paths.js');
-      expect(getProfilesDir()).toBe('/test/fettle/profiles');
+      expect(getProfilesDir()).toBe('/test/fitout/profiles');
     });
 
-    it('getGlobalConfigPath builds on getFettleConfigHome', async () => {
-      vi.stubEnv('FETTLE_CONFIG_HOME', '/test/fettle');
+    it('getGlobalConfigPath builds on getFitoutConfigHome', async () => {
+      vi.stubEnv('FITOUT_CONFIG_HOME', '/test/fitout');
       vi.resetModules();
       const { getGlobalConfigPath } = await import('./paths.js');
-      expect(getGlobalConfigPath()).toBe('/test/fettle/config.toml');
+      expect(getGlobalConfigPath()).toBe('/test/fitout/config.toml');
     });
   });
 });

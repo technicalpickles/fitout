@@ -1,7 +1,7 @@
 // src/init.test.ts
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { readClaudeSettings, hasFettleHook, addFettleHook, writeClaudeSettings, getDefaultProfilePath, createDefaultProfile, runInit, InitResult, createFettleSkill, hasFettleSkill, hasDefaultProfile, hasProjectConfig, getProjectConfigContent, getProjectConfigPath } from './init.js';
-import { getClaudeSettingsPath, getClaudeSkillsDir, getFettleSkillPath } from './paths.js';
+import { readClaudeSettings, hasFitoutHook, addFitoutHook, writeClaudeSettings, getDefaultProfilePath, createDefaultProfile, runInit, InitResult, createFitoutSkill, hasFitoutSkill, hasDefaultProfile, hasProjectConfig, getProjectConfigContent, getProjectConfigPath } from './init.js';
+import { getClaudeSettingsPath, getClaudeSkillsDir, getFitoutSkillPath } from './paths.js';
 import { setupTestEnv, TestContext } from './test-utils.js';
 import { homedir } from 'node:os';
 import { join, dirname } from 'node:path';
@@ -31,7 +31,7 @@ describe('readClaudeSettings', () => {
   });
 
   it('parses existing JSON file', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'fettle-test-'));
+    const tmpDir = mkdtempSync(join(tmpdir(), 'fitout-test-'));
     const settingsPath = join(tmpDir, 'settings.json');
     writeFileSync(settingsPath, JSON.stringify({ foo: 'bar' }));
 
@@ -42,43 +42,43 @@ describe('readClaudeSettings', () => {
   });
 });
 
-describe('hasFettleHook', () => {
+describe('hasFitoutHook', () => {
   it('returns false for empty settings', () => {
-    expect(hasFettleHook({})).toBe(false);
+    expect(hasFitoutHook({})).toBe(false);
   });
 
   it('returns false for settings without hooks', () => {
-    expect(hasFettleHook({ env: {} })).toBe(false);
+    expect(hasFitoutHook({ env: {} })).toBe(false);
   });
 
-  it('returns true when fettle install hook exists', () => {
+  it('returns true when fitout install hook exists', () => {
     const settings = {
       hooks: {
         SessionStart: [
           {
             hooks: [
-              { type: 'command', command: 'fettle install --hook' }
+              { type: 'command', command: 'fitout install --hook' }
             ]
           }
         ]
       }
     };
-    expect(hasFettleHook(settings)).toBe(true);
+    expect(hasFitoutHook(settings)).toBe(true);
   });
 
-  it('returns true when legacy fettle apply hook exists', () => {
+  it('returns true when legacy fitout apply hook exists', () => {
     const settings = {
       hooks: {
         SessionStart: [
           {
             hooks: [
-              { type: 'command', command: 'fettle apply --hook' }
+              { type: 'command', command: 'fitout apply --hook' }
             ]
           }
         ]
       }
     };
-    expect(hasFettleHook(settings)).toBe(true);
+    expect(hasFitoutHook(settings)).toBe(true);
   });
 
   it('returns false for other SessionStart hooks', () => {
@@ -93,20 +93,20 @@ describe('hasFettleHook', () => {
         ]
       }
     };
-    expect(hasFettleHook(settings)).toBe(false);
+    expect(hasFitoutHook(settings)).toBe(false);
   });
 });
 
-describe('addFettleHook', () => {
+describe('addFitoutHook', () => {
   it('creates hooks object if missing', () => {
     const settings = {};
-    const result = addFettleHook(settings);
+    const result = addFitoutHook(settings);
     expect(result.hooks?.SessionStart).toBeDefined();
   });
 
   it('creates SessionStart array if missing', () => {
     const settings = { hooks: {} };
-    const result = addFettleHook(settings);
+    const result = addFitoutHook(settings);
     expect(result.hooks?.SessionStart).toBeInstanceOf(Array);
   });
 
@@ -118,16 +118,16 @@ describe('addFettleHook', () => {
         ]
       }
     };
-    const result = addFettleHook(settings);
+    const result = addFitoutHook(settings);
     expect(result.hooks?.SessionStart).toHaveLength(2);
   });
 
   it('adds the correct hook structure', () => {
     const settings = {};
-    const result = addFettleHook(settings);
+    const result = addFitoutHook(settings);
     expect(result.hooks?.SessionStart?.[0]).toEqual({
       hooks: [
-        { type: 'command', command: 'fettle install --hook' }
+        { type: 'command', command: 'fitout install --hook' }
       ]
     });
   });
@@ -135,7 +135,7 @@ describe('addFettleHook', () => {
 
 describe('writeClaudeSettings', () => {
   it('writes JSON with 2-space indentation', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'fettle-test-'));
+    const tmpDir = mkdtempSync(join(tmpdir(), 'fitout-test-'));
     const settingsPath = join(tmpDir, 'settings.json');
 
     writeClaudeSettings(settingsPath, { foo: 'bar' });
@@ -147,7 +147,7 @@ describe('writeClaudeSettings', () => {
   });
 
   it('creates parent directories if needed', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'fettle-test-'));
+    const tmpDir = mkdtempSync(join(tmpdir(), 'fitout-test-'));
     const settingsPath = join(tmpDir, 'nested', 'dir', 'settings.json');
 
     writeClaudeSettings(settingsPath, { foo: 'bar' });
@@ -168,7 +168,7 @@ describe('getDefaultProfilePath', () => {
 
 describe('createDefaultProfile', () => {
   it('creates profile file with comment header', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'fettle-test-'));
+    const tmpDir = mkdtempSync(join(tmpdir(), 'fitout-test-'));
     const profilePath = join(tmpDir, 'default.toml');
 
     createDefaultProfile(profilePath);
@@ -181,7 +181,7 @@ describe('createDefaultProfile', () => {
   });
 
   it('does not overwrite existing profile', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'fettle-test-'));
+    const tmpDir = mkdtempSync(join(tmpdir(), 'fitout-test-'));
     const profilePath = join(tmpDir, 'default.toml');
 
     // Create existing profile
@@ -198,7 +198,7 @@ describe('createDefaultProfile', () => {
 
 describe('runInit', () => {
   it('returns already initialized when hook exists', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'fettle-test-'));
+    const tmpDir = mkdtempSync(join(tmpdir(), 'fitout-test-'));
     const settingsPath = join(tmpDir, 'settings.json');
     const profilesDir = join(tmpDir, 'profiles');
 
@@ -206,7 +206,7 @@ describe('runInit', () => {
     writeFileSync(settingsPath, JSON.stringify({
       hooks: {
         SessionStart: [{
-          hooks: [{ type: 'command', command: 'fettle apply --hook' }]
+          hooks: [{ type: 'command', command: 'fitout apply --hook' }]
         }]
       }
     }));
@@ -220,7 +220,7 @@ describe('runInit', () => {
   });
 
   it('adds hook when not present', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'fettle-test-'));
+    const tmpDir = mkdtempSync(join(tmpdir(), 'fitout-test-'));
     const settingsPath = join(tmpDir, 'settings.json');
     const profilesDir = join(tmpDir, 'profiles');
 
@@ -237,7 +237,7 @@ describe('runInit', () => {
   });
 
   it('creates profile when requested', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'fettle-test-'));
+    const tmpDir = mkdtempSync(join(tmpdir(), 'fitout-test-'));
     const settingsPath = join(tmpDir, 'settings.json');
     const profilesDir = join(tmpDir, 'profiles');
 
@@ -256,12 +256,12 @@ describe('runInit', () => {
   });
 
   it('creates skill when requested', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'fettle-test-'));
+    const tmpDir = mkdtempSync(join(tmpdir(), 'fitout-test-'));
     const settingsPath = join(tmpDir, 'settings.json');
     const profilesDir = join(tmpDir, 'profiles');
 
     // Mock the skill path by testing with the real function
-    // Since createFettleSkill uses a fixed path, we'll test via runInit result
+    // Since createFitoutSkill uses a fixed path, we'll test via runInit result
     const result = runInit({
       settingsPath,
       profilesDir,
@@ -269,7 +269,7 @@ describe('runInit', () => {
       createSkill: true
     });
 
-    expect(result.skillPath).toBe(getFettleSkillPath());
+    expect(result.skillPath).toBe(getFitoutSkillPath());
     // Note: skillCreated may be false if skill already exists from previous runs
 
     rmSync(tmpDir, { recursive: true });
@@ -292,7 +292,7 @@ describe('getClaudeSkillsDir', () => {
   });
 });
 
-describe('getFettleSkillPath', () => {
+describe('getFitoutSkillPath', () => {
   let ctx: TestContext;
 
   beforeEach(() => {
@@ -303,12 +303,12 @@ describe('getFettleSkillPath', () => {
     ctx.cleanup();
   });
 
-  it('returns path to fettle skill file', () => {
-    expect(getFettleSkillPath()).toBe(join(ctx.claudeHome, 'skills', 'fettle', 'SKILL.md'));
+  it('returns path to fitout skill file', () => {
+    expect(getFitoutSkillPath()).toBe(join(ctx.claudeHome, 'skills', 'fitout', 'SKILL.md'));
   });
 });
 
-describe('createFettleSkill', () => {
+describe('createFitoutSkill', () => {
   let ctx: TestContext;
 
   beforeEach(() => {
@@ -320,26 +320,26 @@ describe('createFettleSkill', () => {
   });
 
   it('creates skill file with correct content', () => {
-    const created = createFettleSkill();
+    const created = createFitoutSkill();
     expect(created).toBe(true);
 
-    const skillPath = getFettleSkillPath();
+    const skillPath = getFitoutSkillPath();
     expect(existsSync(skillPath)).toBe(true);
 
     const content = readFileSync(skillPath, 'utf-8');
-    expect(content).toContain('name: fettle');
+    expect(content).toContain('name: fitout');
     expect(content).toContain('description:');
-    expect(content).toContain('Fettle Diagnostic');
+    expect(content).toContain('Fitout Diagnostic');
   });
 
   it('does not overwrite existing skill', () => {
-    createFettleSkill();
-    const result = createFettleSkill();
+    createFitoutSkill();
+    const result = createFitoutSkill();
     expect(result).toBe(false);
   });
 });
 
-describe('hasFettleSkill', () => {
+describe('hasFitoutSkill', () => {
   let ctx: TestContext;
 
   beforeEach(() => {
@@ -351,12 +351,12 @@ describe('hasFettleSkill', () => {
   });
 
   it('returns false when skill does not exist', () => {
-    expect(hasFettleSkill()).toBe(false);
+    expect(hasFitoutSkill()).toBe(false);
   });
 
   it('returns true when skill exists', () => {
-    createFettleSkill();
-    expect(hasFettleSkill()).toBe(true);
+    createFitoutSkill();
+    expect(hasFitoutSkill()).toBe(true);
   });
 });
 
@@ -366,7 +366,7 @@ describe('hasDefaultProfile', () => {
   });
 
   it('returns true when profile exists', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'fettle-test-'));
+    const tmpDir = mkdtempSync(join(tmpdir(), 'fitout-test-'));
     const profilePath = join(tmpDir, 'default.toml');
     writeFileSync(profilePath, 'plugins = []');
 
@@ -382,8 +382,8 @@ describe('hasProjectConfig', () => {
   });
 
   it('returns true when config exists', () => {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'fettle-test-'));
-    const configPath = join(tmpDir, '.claude', 'fettle.toml');
+    const tmpDir = mkdtempSync(join(tmpdir(), 'fitout-test-'));
+    const configPath = join(tmpDir, '.claude', 'fitout.toml');
     mkdirSync(dirname(configPath), { recursive: true });
     writeFileSync(configPath, 'plugins = []');
 

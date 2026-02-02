@@ -3,12 +3,12 @@ import { formatInstallResult, formatInstallResultHook, InstallResult, runInstall
 
 describe('runInstall with hook mode', () => {
   it('returns urgent message when no config found', () => {
-    // runInstall looks for .claude/fettle.toml in git root
+    // runInstall looks for .claude/fitout.toml in git root
     // When run in a temp dir with no config, hook mode provides urgent context for Claude
     const result = runInstall('/tmp/nonexistent-project-dir', { hook: true });
-    expect(result.output).toContain('FETTLE NOT CONFIGURED');
+    expect(result.output).toContain('FITOUT NOT CONFIGURED');
     expect(result.output).toContain('IMPORTANT');
-    expect(result.output).toContain('fettle init');
+    expect(result.output).toContain('fitout init');
     expect(result.exitCode).toBe(0);
   });
 });
@@ -31,11 +31,11 @@ describe('formatInstallResultHook', () => {
     };
     const output = formatInstallResultHook(result);
     expect(output).toContain('<system-reminder>');
-    expect(output).toContain('Fettle installed 2 plugins');
+    expect(output).toContain('Fitout installed 2 plugins');
     expect(output).toContain('plugin-a@registry');
     expect(output).toContain('plugin-b@registry');
     expect(output).toContain('restart Claude Code');
-    expect(output).toContain('fettle status');
+    expect(output).toContain('fitout status');
   });
 
   it('uses singular for one plugin', () => {
@@ -45,7 +45,7 @@ describe('formatInstallResultHook', () => {
       alreadyPresent: [],
     };
     const output = formatInstallResultHook(result);
-    expect(output).toContain('Fettle installed 1 plugin for this project');
+    expect(output).toContain('Fitout installed 1 plugin for this project');
     expect(output).not.toContain('1 plugins');
   });
 
@@ -67,7 +67,7 @@ describe('formatInstallResultHook', () => {
       alreadyPresent: [],
     };
     const formatted = formatInstallResultHook(result);
-    expect(formatted).toContain('Fettle installed 1 plugin');
+    expect(formatted).toContain('Fitout installed 1 plugin');
     expect(formatted).toContain('good@registry');
   });
 });

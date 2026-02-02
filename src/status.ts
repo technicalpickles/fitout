@@ -7,7 +7,7 @@ import { resolveProfiles } from './profiles.js';
 import { colors, symbols, provenanceColor, formatContextLine } from './colors.js';
 import { listAvailablePlugins, refreshMarketplaces } from './marketplace.js';
 import { findOutdatedPlugins, OutdatedPlugin } from './update.js';
-import { readClaudeSettings, hasFettleHook, hasFettleSkill } from './init.js';
+import { readClaudeSettings, hasFitoutHook, hasFitoutSkill } from './init.js';
 import { getClaudeSettingsPath } from './paths.js';
 
 export interface StatusOptions {
@@ -28,13 +28,13 @@ export function formatGlobalStatus(status: GlobalStatus): string {
   if (status.hookInstalled) {
     lines.push(`  ${symbols.present} Hook installed`);
   } else {
-    lines.push(`  ${symbols.missing} Hook ${colors.dim('(run `fettle init`)')}`);
+    lines.push(`  ${symbols.missing} Hook ${colors.dim('(run `fitout init`)')}`);
   }
 
   if (status.skillInstalled) {
     lines.push(`  ${symbols.present} Skill installed`);
   } else {
-    lines.push(`  ${symbols.missing} Skill ${colors.dim('(run `fettle init`)')}`);
+    lines.push(`  ${symbols.missing} Skill ${colors.dim('(run `fitout init`)')}`);
   }
 
   if (status.profiles.length > 0) {
@@ -92,9 +92,9 @@ export function formatStatusResolved(diff: StatusDiff, showRefreshTip: boolean):
   // Add tips when there are outdated plugins
   if (diff.outdated.length > 0) {
     lines.push('');
-    lines.push(colors.dim(`Tip: Run \`fettle update\` to update outdated plugins.`));
+    lines.push(colors.dim(`Tip: Run \`fitout update\` to update outdated plugins.`));
     if (showRefreshTip) {
-      lines.push(colors.dim(`     Run \`fettle status --refresh\` to check for newer versions.`));
+      lines.push(colors.dim(`     Run \`fitout status --refresh\` to check for newer versions.`));
     }
   }
 
@@ -132,8 +132,8 @@ export function runStatus(cwd: string, options: StatusOptions = {}): { output: s
   // Check global status
   const settingsPath = getClaudeSettingsPath();
   const settings = readClaudeSettings(settingsPath);
-  const hookInstalled = hasFettleHook(settings);
-  const skillInstalled = hasFettleSkill();
+  const hookInstalled = hasFitoutHook(settings);
+  const skillInstalled = hasFitoutSkill();
 
   const configPath = findConfigPath(cwd);
 
@@ -145,7 +145,7 @@ export function runStatus(cwd: string, options: StatusOptions = {}): { output: s
       profiles: [],
     });
     return {
-      output: `${globalStatus}\n\nNo project config. Run \`fettle init\` to create one.`,
+      output: `${globalStatus}\n\nNo project config. Run \`fitout init\` to create one.`,
       exitCode: 1,
     };
   }

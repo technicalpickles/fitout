@@ -21,4 +21,4 @@ What you expected to happen.
 **Environment**
 - OS:
 - Node.js version:
-- fettle version:
+- fitout version:

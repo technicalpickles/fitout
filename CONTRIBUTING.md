@@ -1,13 +1,13 @@
-# Contributing to Fettle
+# Contributing to Fitout
 
-Thanks for your interest in contributing to Fettle!
+Thanks for your interest in contributing to Fitout!
 
 ## Development Setup
 
 ```bash
 # Clone the repo
-git clone https://github.com/technicalpickles/fettle.git
-cd fettle
+git clone https://github.com/technicalpickles/fitout.git
+cd fitout
 
 # Install dependencies
 npm install

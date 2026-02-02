@@ -1,10 +1,10 @@
 {
-  "name": "@technicalpickles/fettle",
+  "name": "fitout",
   "version": "0.1.0",
   "description": "Context-aware plugin manager for Claude Code",
   "type": "module",
   "bin": {
-    "fettle": "./dist/cli.js"
+    "fitout": "./dist/cli.js"
   },
   "files": [
     "dist"
@@ -25,11 +25,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/technicalpickles/fettle.git"
+    "url": "git+https://github.com/technicalpickles/fitout.git"
   },
-  "homepage": "https://github.com/technicalpickles/fettle#readme",
+  "homepage": "https://github.com/technicalpickles/fitout#readme",
   "bugs": {
-    "url": "https://github.com/technicalpickles/fettle/issues"
+    "url": "https://github.com/technicalpickles/fitout/issues"
   },
   "dependencies": {
     "@pnpm/tabtab": "^0.5.4",

@@ -61,11 +61,11 @@ describe('completion', () => {
         complete: true,
         words: 1,
         point: 7,
-        line: 'fettle ',
-        partial: 'fettle ',
+        line: 'fitout ',
+        partial: 'fitout ',
         last: '',
         lastPartial: '',
-        prev: 'fettle',
+        prev: 'fitout',
       });
       vi.mocked(tabtab.getShellFromEnv).mockReturnValue('bash');
 
@@ -83,8 +83,8 @@ describe('completion', () => {
         complete: true,
         words: 2,
         point: 19,
-        line: 'fettle marketplace ',
-        partial: 'fettle marketplace ',
+        line: 'fitout marketplace',
+        partial: 'fitout marketplace',
         last: '',
         lastPartial: '',
         prev: 'marketplace',
@@ -101,8 +101,8 @@ describe('completion', () => {
         complete: true,
         words: 2,
         point: 18,
-        line: 'fettle completion ',
-        partial: 'fettle completion ',
+        line: 'fitout completion',
+        partial: 'fitout completion',
         last: '',
         lastPartial: '',
         prev: 'completion',
@@ -119,8 +119,8 @@ describe('completion', () => {
         complete: true,
         words: 2,
         point: 14,
-        line: 'fettle status ',
-        partial: 'fettle status ',
+        line: 'fitout status',
+        partial: 'fitout status',
         last: '',
         lastPartial: '',
         prev: 'status',
@@ -137,8 +137,8 @@ describe('completion', () => {
         complete: true,
         words: 2,
         point: 15,
-        line: 'fettle install ',
-        partial: 'fettle install ',
+        line: 'fitout install',
+        partial: 'fitout install',
         last: '',
         lastPartial: '',
         prev: 'install',
@@ -157,8 +157,8 @@ describe('completion', () => {
       await installCompletion();
 
       expect(tabtab.install).toHaveBeenCalledWith({
-        name: 'fettle',
-        completer: 'fettle',
+        name: 'fitout',
+        completer: 'fitout',
       });
     });
 
@@ -167,8 +167,8 @@ describe('completion', () => {
       await installCompletion('zsh');
 
       expect(tabtab.install).toHaveBeenCalledWith({
-        name: 'fettle',
-        completer: 'fettle',
+        name: 'fitout',
+        completer: 'fitout',
         shell: 'zsh',
       });
     });
@@ -180,7 +180,7 @@ describe('completion', () => {
       await uninstallCompletion();
 
       expect(tabtab.uninstall).toHaveBeenCalledWith({
-        name: 'fettle',
+        name: 'fitout',
       });
     });
   });

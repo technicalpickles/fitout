@@ -61,19 +61,19 @@ export function handleCompletion(): boolean {
   const { prev, last } = env;
   const shell = tabtab.getShellFromEnv(process.env);
 
-  // Command-level completion: `fettle <tab>`
-  if (prev === 'fettle') {
+  // Command-level completion: `fitout <tab>`
+  if (prev === 'fitout') {
     log(COMMANDS, shell);
     return true;
   }
 
-  // Subcommand completion: `fettle marketplace <tab>`
+  // Subcommand completion: `fitout marketplace <tab>`
   if (prev === 'marketplace') {
     log(MARKETPLACE_SUBCOMMANDS, shell);
     return true;
   }
 
-  // Subcommand completion: `fettle completion <tab>`
+  // Subcommand completion: `fitout completion <tab>`
   if (prev === 'completion') {
     log(COMPLETION_SUBCOMMANDS, shell);
     return true;
@@ -85,7 +85,7 @@ export function handleCompletion(): boolean {
     return true;
   }
 
-  // Plugin completion for `fettle update <tab>`
+  // Plugin completion for `fitout update <tab>`
   if (prev === 'update' || isAfterUpdate(env)) {
     const plugins = getOutdatedPluginIds();
     const flags = FLAGS['update'] || [];
@@ -132,8 +132,8 @@ function findCommand(env: ReturnType<typeof tabtab.parseEnv>): string | null {
  */
 export async function installCompletion(shell?: SupportedShell): Promise<void> {
   await tabtab.install({
-    name: 'fettle',
-    completer: 'fettle',
+    name: 'fitout',
+    completer: 'fitout',
     ...(shell && { shell }),
   });
 }
@@ -143,6 +143,6 @@ export async function installCompletion(shell?: SupportedShell): Promise<void> {
  */
 export async function uninstallCompletion(): Promise<void> {
   await tabtab.uninstall({
-    name: 'fettle',
+    name: 'fitout',
   });
 }

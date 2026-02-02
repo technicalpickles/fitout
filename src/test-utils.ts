@@ -8,7 +8,7 @@ const TEST_TMP_ROOT = join(import.meta.dirname, '..', '.test-tmp');
 
 export interface TestContext {
   claudeHome: string;
-  fettleHome: string;
+  fitoutHome: string;
   baseDir: string;
   cleanup: () => void;
 }
@@ -19,17 +19,17 @@ export function setupTestEnv(): TestContext {
   const testId = `${Date.now()}-${++testCounter}`;
   const baseDir = join(TEST_TMP_ROOT, testId);
   const claudeHome = join(baseDir, '.claude');
-  const fettleHome = join(baseDir, '.config', 'fettle');
+  const fitoutHome = join(baseDir, '.config', 'fitout');
 
   mkdirSync(claudeHome, { recursive: true });
-  mkdirSync(fettleHome, { recursive: true });
+  mkdirSync(fitoutHome, { recursive: true });
 
   vi.stubEnv('CLAUDE_CONFIG_DIR', claudeHome);
-  vi.stubEnv('FETTLE_CONFIG_HOME', fettleHome);
+  vi.stubEnv('FITOUT_CONFIG_HOME', fitoutHome);
 
   return {
     claudeHome,
-    fettleHome,
+    fitoutHome,
     baseDir,
     cleanup: () => {
       vi.unstubAllEnvs();

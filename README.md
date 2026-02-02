@@ -1,6 +1,6 @@
-# Fettle
+# Fitout
 
-[![CI](https://github.com/technicalpickles/fettle/actions/workflows/ci.yml/badge.svg)](https://github.com/technicalpickles/fettle/actions/workflows/ci.yml)
+[![CI](https://github.com/technicalpickles/fitout/actions/workflows/ci.yml/badge.svg)](https://github.com/technicalpickles/fitout/actions/workflows/ci.yml)
 
 Context-aware plugin manager for Claude Code.
 
@@ -13,20 +13,20 @@ Managing Claude Code plugins across projects is painful:
 
 ## The Solution
 
-Fettle ensures your actual runtime state matches your declared configuration.
+Fitout ensures your actual runtime state matches your declared configuration.
 
-1. Declare desired plugins in `.claude/fettle.toml`
-2. Run `fettle status` to see the diff
-3. Run `fettle apply` to sync
+1. Declare desired plugins in `.claude/fitout.toml`
+2. Run `fitout status` to see the diff
+3. Run `fitout apply` to sync
 
 ## Installation
 
 ```bash
 # Install globally
-npm install -g fettle
+npm install -g fitout
 
 # Set up Claude integration
-fettle init
+fitout init
 ```
 
 This adds a SessionStart hook to Claude Code that automatically installs missing plugins when you start a session.
@@ -34,15 +34,15 @@ This adds a SessionStart hook to Claude Code that automatically installs missing
 ### Non-interactive setup
 
 ```bash
-fettle init --yes        # Use defaults (creates default profile)
-fettle init --hook-only  # Only add hook, no profile
+fitout init --yes        # Use defaults (creates default profile)
+fitout init --hook-only  # Only add hook, no profile
 ```
 
 Requires [Claude Code CLI](https://claude.ai/docs/claude-code) to be installed.
 
 ## Quick Start
 
-Create `.claude/fettle.toml` in your project:
+Create `.claude/fitout.toml` in your project:
 
 ```toml
 plugins = [
@@ -54,7 +54,7 @@ plugins = [
 Check status:
 
 ```bash
-fettle status
+fitout status
 ```
 
 Output:
@@ -71,12 +71,12 @@ Context: /path/to/project
 Install missing plugins:
 
 ```bash
-fettle apply
+fitout apply
 ```
 
 ## Commands
 
-### `fettle status`
+### `fitout status`
 
 Shows the diff between desired and installed plugins.
 
@@ -86,13 +86,13 @@ Shows the diff between desired and installed plugins.
 
 Exit code is `1` if any plugins are missing, `0` otherwise.
 
-### `fettle apply`
+### `fitout apply`
 
 Installs missing plugins to sync with config.
 
 ```bash
-fettle apply           # Install missing plugins
-fettle apply --dry-run # Preview what would be installed
+fitout apply           # Install missing plugins
+fitout apply --dry-run # Preview what would be installed
 ```
 
 ## Profiles
@@ -101,10 +101,10 @@ Share plugin sets across projects using profiles.
 
 ### User Profiles
 
-Create profiles at `~/.config/fettle/profiles/`:
+Create profiles at `~/.config/fitout/profiles/`:
 
 ```toml
-# ~/.config/fettle/profiles/default.toml
+# ~/.config/fitout/profiles/default.toml
 # Auto-included in every project (silent if missing)
 plugins = [
   "superpowers@superpowers-marketplace",
@@ -112,7 +112,7 @@ plugins = [
 ```
 
 ```toml
-# ~/.config/fettle/profiles/backend.toml
+# ~/.config/fitout/profiles/backend.toml
 plugins = [
   "database-tools@some-registry",
   "api-helpers@some-registry",
@@ -124,7 +124,7 @@ plugins = [
 Reference profiles in your project config:
 
 ```toml
-# .claude/fettle.toml
+# .claude/fitout.toml
 profiles = ["backend"]
 plugins = [
   "project-specific@registry",
@@ -149,7 +149,7 @@ Context: /path/to/project
 
 ## Configuration Reference
 
-### Project Config (`.claude/fettle.toml`)
+### Project Config (`.claude/fitout.toml`)
 
 ```toml
 # Optional: explicit profiles to include
@@ -161,7 +161,7 @@ plugins = [
 ]
 ```
 
-### Profile Config (`~/.config/fettle/profiles/<name>.toml`)
+### Profile Config (`~/.config/fitout/profiles/<name>.toml`)
 
 ```toml
 # Plugins provided by this profile

@@ -8,8 +8,8 @@ export function getClaudeHome(): string {
   return process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude');
 }
 
-export function getFettleConfigHome(): string {
-  return process.env.FETTLE_CONFIG_HOME || join(homedir(), '.config', 'fettle');
+export function getFitoutConfigHome(): string {
+  return process.env.FITOUT_CONFIG_HOME || join(homedir(), '.config', 'fitout');
 }
 
 // === Claude Code paths ===
@@ -22,8 +22,8 @@ export function getClaudeSkillsDir(): string {
   return join(getClaudeHome(), 'skills');
 }
 
-export function getFettleSkillPath(): string {
-  return join(getClaudeSkillsDir(), 'fettle', 'SKILL.md');
+export function getFitoutSkillPath(): string {
+  return join(getClaudeSkillsDir(), 'fitout', 'SKILL.md');
 }
 
 export function getClaudePluginsDir(): string {
@@ -34,16 +34,16 @@ export function getMarketplacesDir(): string {
   return join(getClaudePluginsDir(), 'marketplaces');
 }
 
-// === Fettle config paths ===
+// === Fitout config paths ===
 
 export function getGlobalConfigDir(): string {
-  return getFettleConfigHome();
+  return getFitoutConfigHome();
 }
 
 export function getGlobalConfigPath(): string {
-  return join(getFettleConfigHome(), 'config.toml');
+  return join(getFitoutConfigHome(), 'config.toml');
 }
 
 export function getProfilesDir(): string {
-  return join(getFettleConfigHome(), 'profiles');
+  return join(getFitoutConfigHome(), 'profiles');
 }
