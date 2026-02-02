@@ -4,7 +4,7 @@
   "description": "Context-aware plugin manager for Claude Code",
   "type": "module",
   "bin": {
-    "fitout": "./dist/cli.js"
+    "fitout": "dist/cli.js"
   },
   "files": [
     "dist"
