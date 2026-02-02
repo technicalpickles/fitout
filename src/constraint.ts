@@ -70,3 +70,35 @@ export function parsePluginString(input: string): ParsedPlugin | ParseError {
   // No constraint - just a plugin ID
   return { id: trimmed, constraint: null };
 }
+
+export interface ParseResult {
+  plugins: ParsedPlugin[];
+  errors: ParseError[];
+}
+
+export function isParsedPlugin(result: ParsedPlugin | ParseError): result is ParsedPlugin {
+  return 'id' in result && !('message' in result);
+}
+
+export function isParseError(result: ParsedPlugin | ParseError): result is ParseError {
+  return 'message' in result;
+}
+
+/**
+ * Parse a list of plugin strings, collecting all errors.
+ */
+export function parsePluginList(inputs: string[]): ParseResult {
+  const plugins: ParsedPlugin[] = [];
+  const errors: ParseError[] = [];
+
+  for (const input of inputs) {
+    const result = parsePluginString(input);
+    if (isParsedPlugin(result)) {
+      plugins.push(result);
+    } else {
+      errors.push(result);
+    }
+  }
+
+  return { plugins, errors };
+}

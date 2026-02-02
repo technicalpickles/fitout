@@ -1,6 +1,6 @@
 // src/constraint.test.ts
 import { describe, it, expect } from 'vitest';
-import { parsePluginString, ParsedPlugin, ParseError } from './constraint.js';
+import { parsePluginString, parsePluginList, isParsedPlugin, isParseError, ParsedPlugin, ParseError } from './constraint.js';
 
 describe('parsePluginString', () => {
   it('parses plugin without constraint', () => {
@@ -69,5 +69,63 @@ describe('parsePluginString', () => {
       input: 'git@marketplace >= 1..0',
       message: 'Invalid version "1..0" - expected number segments (e.g., 1.0.0)',
     });
+  });
+});
+
+describe('parsePluginList', () => {
+  it('parses list of valid plugins', () => {
+    const result = parsePluginList([
+      'git@marketplace >= 1.0.0',
+      'other@marketplace',
+    ]);
+
+    expect(result.plugins).toEqual([
+      { id: 'git@marketplace', constraint: '1.0.0' },
+      { id: 'other@marketplace', constraint: null },
+    ]);
+    expect(result.errors).toEqual([]);
+  });
+
+  it('collects all errors', () => {
+    const result = parsePluginList([
+      'git@marketplace >= abc',
+      'other@marketplace < 1.0.0',
+      'valid@marketplace',
+    ]);
+
+    expect(result.plugins).toEqual([
+      { id: 'valid@marketplace', constraint: null },
+    ]);
+    expect(result.errors).toHaveLength(2);
+    expect(result.errors[0].input).toBe('git@marketplace >= abc');
+    expect(result.errors[1].input).toBe('other@marketplace < 1.0.0');
+  });
+
+  it('returns empty arrays for empty input', () => {
+    const result = parsePluginList([]);
+    expect(result.plugins).toEqual([]);
+    expect(result.errors).toEqual([]);
+  });
+});
+
+describe('type guards', () => {
+  it('isParsedPlugin returns true for valid parse', () => {
+    const result = parsePluginString('git@marketplace >= 1.0.0');
+    expect(isParsedPlugin(result)).toBe(true);
+  });
+
+  it('isParsedPlugin returns false for error', () => {
+    const result = parsePluginString('git@marketplace >= abc');
+    expect(isParsedPlugin(result)).toBe(false);
+  });
+
+  it('isParseError returns true for error', () => {
+    const result = parsePluginString('git@marketplace >= abc');
+    expect(isParseError(result)).toBe(true);
+  });
+
+  it('isParseError returns false for valid parse', () => {
+    const result = parsePluginString('git@marketplace >= 1.0.0');
+    expect(isParseError(result)).toBe(false);
   });
 });
