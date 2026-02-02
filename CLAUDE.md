@@ -1,4 +1,4 @@
-# Fettle
+# Fitout
 
 Context-aware plugin manager for Claude Code.
 
@@ -36,7 +36,7 @@ npm run build              # Build to dist/
 
 ## Config
 
-Project config lives at `.claude/fettle.toml`:
+Project config lives at `.claude/fitout.toml`:
 
 ```toml
 plugins = [

@@ -21,7 +21,7 @@ export function resolveProjectRoot(cwd: string): string {
 
 export function findConfigPath(startDir: string): string | null {
   const root = resolveProjectRoot(startDir);
-  const configPath = join(root, '.claude', 'fettle.toml');
+  const configPath = join(root, '.claude', 'fitout.toml');
 
   if (existsSync(configPath)) {
     return configPath;

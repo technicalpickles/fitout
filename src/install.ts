@@ -27,11 +27,11 @@ export function formatInstallResultHook(result: InstallResult): string {
 
   return [
     '<system-reminder>',
-    `Fettle installed ${result.installed.length} plugin${s} for this project:`,
+    `Fitout installed ${result.installed.length} plugin${s} for this project:`,
     pluginList,
     '',
     'User should restart Claude Code to activate them.',
-    'User can run `fettle status` to see configured plugins.',
+    'User can run `fitout status` to see configured plugins.',
     '</system-reminder>',
   ].join('\n');
 }
@@ -77,18 +77,18 @@ export function runInstall(cwd: string, options: { dryRun?: boolean; hook?: bool
     // In hook mode, provide urgent context for Claude about missing config
     if (options.hook) {
       const message = [
-        '⚠️ FETTLE NOT CONFIGURED FOR THIS PROJECT ⚠️',
+        '⚠️ FITOUT NOT CONFIGURED FOR THIS PROJECT ⚠️',
         '',
         'IMPORTANT: Before doing anything else, inform the user:',
-        '"I notice fettle (your plugin manager) isn\'t set up for this project.',
-        'Run `fettle init` to configure plugins, or create an empty .claude/fettle.toml to skip."',
+        '"I notice fitout (your plugin manager) isn\'t set up for this project.',
+        'Run `fitout init` to configure plugins, or create an empty .claude/fitout.toml to skip."',
         '',
-        'This message will stop appearing once fettle is configured.',
+        'This message will stop appearing once fitout is configured.',
       ].join('\n');
       return { output: message, exitCode: 0 };
     }
     return {
-      output: 'No fettle.toml found. Run `fettle init` to create one.',
+      output: 'No fitout.toml found. Run `fitout init` to create one.',
       exitCode: 1,
     };
   }

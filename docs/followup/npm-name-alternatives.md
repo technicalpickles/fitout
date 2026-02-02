@@ -1,26 +1,18 @@
 # npm Name Alternatives
 
-## Context
+## Status: RESOLVED
 
-The name `fettle` is taken on npm by a health dashboard project. Currently using `@technicalpickles/fettle` as a scoped package.
+Renamed to `fitout` - see `docs/plans/2026-02-02-rename-to-fitout.md`.
 
-## Followup
+## Original Context
 
-Look for alternative unscoped names that:
-- Are available on npm
-- Relate to the plugin manager concept
-- Are memorable and easy to type
+The name `fettle` was taken on npm by a health dashboard project. Was using `@technicalpickles/fettle` as a scoped package.
 
-### Ideas to explore
+## Resolution
 
-- Plugin-related: `plugwise`, `plugctl`, `plugsync`
-- Claude-related: `claude-plugins`, `claudectl`
-- State/sync-related: `statesync`, `configsync`
-- Wordplay on "fettle": `fettler`, `infettle`
-
-### Criteria
-
-- Short (ideally <10 chars)
-- Easy to spell
-- Not confusable with existing tools
-- Available on npm and GitHub
+Chose `fitout` because:
+- **Meaning**: "to supply someone or something with all of the things that will be needed"
+- **Metaphor**: Like Q fitting out James Bond with gadgets before a mission
+- **Available**: npm ✓, GitHub ✓
+- **Short**: 6 characters
+- **No inappropriate meanings**: Verified via Urban Dictionary and Cambridge Dictionary

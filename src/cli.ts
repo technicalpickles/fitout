@@ -6,14 +6,14 @@ import {
   runInit,
   getProjectConfigPath,
   readClaudeSettings,
-  hasFettleHook,
-  hasFettleSkill,
+  hasFitoutHook,
+  hasFitoutSkill,
   hasDefaultProfile,
   hasProjectConfig,
   getProjectConfigContent,
   getDefaultProfilePath,
 } from './init.js';
-import { getClaudeSettingsPath, getFettleSkillPath } from './paths.js';
+import { getClaudeSettingsPath, getFitoutSkillPath } from './paths.js';
 import { getProfilesDir, resolveProjectRoot } from './context.js';
 import { confirm, input } from './prompt.js';
 import { colors, symbols, formatPath } from './colors.js';
@@ -30,7 +30,7 @@ if (handleCompletion()) {
 }
 
 program
-  .name('fettle')
+  .name('fitout')
   .description('Context-aware plugin manager for Claude Code')
   .version('0.1.0');
 
@@ -126,7 +126,7 @@ marketplace
 
 program
   .command('init')
-  .description('Set up Fettle integration with Claude Code')
+  .description('Set up Fitout integration with Claude Code')
   .option('-y, --yes', 'Skip prompts, use defaults')
   .option('--hook-only', 'Only add the hook, do not create profile or project config')
   .action(async (options) => {
@@ -134,12 +134,12 @@ program
     const profilesDir = getProfilesDir();
     const projectRoot = resolveProjectRoot(process.cwd());
     const projectConfigPath = getProjectConfigPath(projectRoot);
-    const skillPath = getFettleSkillPath();
+    const skillPath = getFitoutSkillPath();
 
     // Check current state
     const settings = readClaudeSettings(settingsPath);
-    const hookExists = hasFettleHook(settings);
-    const skillExists = hasFettleSkill();
+    const hookExists = hasFitoutHook(settings);
+    const skillExists = hasFitoutSkill();
     const profileExists = hasDefaultProfile(profilesDir);
     const configExists = hasProjectConfig(projectRoot);
 
@@ -188,7 +188,7 @@ program
     }
 
     // Interactive phased mode
-    console.log('Checking Fettle setup...\n');
+    console.log('Checking Fitout setup...\n');
 
     // Phase 1: Global setup
     console.log(colors.header('Global:'));

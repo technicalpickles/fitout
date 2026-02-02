@@ -1,7 +1,7 @@
 // src/init.ts
 import { join, dirname } from 'node:path';
 import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
-import { getClaudeSettingsPath, getClaudeSkillsDir, getFettleSkillPath } from './paths.js';
+import { getClaudeSettingsPath, getClaudeSkillsDir, getFitoutSkillPath } from './paths.js';
 
 export function readClaudeSettings(path: string): Record<string, unknown> {
   if (!existsSync(path)) {
@@ -15,7 +15,7 @@ export function readClaudeSettings(path: string): Record<string, unknown> {
   }
 }
 
-export function hasFettleHook(settings: Record<string, unknown>): boolean {
+export function hasFitoutHook(settings: Record<string, unknown>): boolean {
   const hooks = settings.hooks as Record<string, unknown[]> | undefined;
   if (!hooks?.SessionStart) return false;
 
@@ -24,8 +24,8 @@ export function hasFettleHook(settings: Record<string, unknown>): boolean {
   // Check for both old 'apply' and new 'install' commands for backwards compatibility
   return sessionStartHooks.some((matcher) =>
     matcher.hooks?.some((hook) =>
-      hook.command?.includes('fettle install --hook') ||
-      hook.command?.includes('fettle apply --hook')
+      hook.command?.includes('fitout install --hook') ||
+      hook.command?.includes('fitout apply --hook')
     )
   );
 }
@@ -40,7 +40,7 @@ interface ClaudeSettings {
   [key: string]: unknown;
 }
 
-export function addFettleHook(settings: Record<string, unknown>): ClaudeSettings {
+export function addFitoutHook(settings: Record<string, unknown>): ClaudeSettings {
   const result = { ...settings } as ClaudeSettings;
 
   if (!result.hooks) {
@@ -53,7 +53,7 @@ export function addFettleHook(settings: Record<string, unknown>): ClaudeSettings
 
   result.hooks.SessionStart.push({
     hooks: [
-      { type: 'command', command: 'fettle install --hook' }
+      { type: 'command', command: 'fitout install --hook' }
     ]
   });
 
@@ -69,8 +69,8 @@ export function getDefaultProfilePath(profilesDir: string, name: string): string
   return join(profilesDir, `${name}.toml`);
 }
 
-export function hasFettleSkill(): boolean {
-  return existsSync(getFettleSkillPath());
+export function hasFitoutSkill(): boolean {
+  return existsSync(getFitoutSkillPath());
 }
 
 export function hasDefaultProfile(profilesDir: string, name: string = 'default'): boolean {
@@ -81,8 +81,8 @@ export function hasProjectConfig(projectRoot: string): boolean {
   return existsSync(getProjectConfigPath(projectRoot));
 }
 
-export function createFettleSkill(): boolean {
-  const skillPath = getFettleSkillPath();
+export function createFitoutSkill(): boolean {
+  const skillPath = getFitoutSkillPath();
 
   if (existsSync(skillPath)) {
     return false; // Already exists
@@ -91,19 +91,19 @@ export function createFettleSkill(): boolean {
   mkdirSync(dirname(skillPath), { recursive: true });
 
   const content = `---
-name: fettle
-description: Use when checking Fettle plugin manager setup, diagnosing plugin issues, or validating that configured plugins are properly installed. Invoke when users ask about plugin status, mention fettle, or when plugin-related problems are suspected.
+name: fitout
+description: Use when checking Fitout plugin manager setup, diagnosing plugin issues, or validating that configured plugins are properly installed. Invoke when users ask about plugin status, mention fitout, or when plugin-related problems are suspected.
 ---
 
-# Fettle Diagnostic
+# Fitout Diagnostic
 
-Check that the Fettle plugin manager is properly configured and all plugins are in sync.
+Check that the Fitout plugin manager is properly configured and all plugins are in sync.
 
 ## Diagnostic Steps
 
 ### 1. Check Hook Installation
 
-Read \`~/.claude/settings.json\` and verify the Fettle hook exists:
+Read \`~/.claude/settings.json\` and verify the Fitout hook exists:
 
 \`\`\`json
 {
@@ -111,7 +111,7 @@ Read \`~/.claude/settings.json\` and verify the Fettle hook exists:
     "SessionStart": [
       {
         "hooks": [
-          { "type": "command", "command": "fettle install --hook" }
+          { "type": "command", "command": "fitout install --hook" }
         ]
       }
     ]
@@ -119,11 +119,11 @@ Read \`~/.claude/settings.json\` and verify the Fettle hook exists:
 }
 \`\`\`
 
-If the hook is missing, suggest running \`fettle init\`.
+If the hook is missing, suggest running \`fitout init\`.
 
 ### 2. Check Plugin Status
 
-Run \`fettle status\` in the current project directory to check:
+Run \`fitout status\` in the current project directory to check:
 - Config file exists and parses correctly
 - Profiles resolve without errors
 - Which plugins are present, missing, or extra
@@ -137,10 +137,10 @@ Provide a clear diagnostic summary:
 - **Plugins:** X present, Y missing, Z extra
 
 If there are issues, suggest the appropriate fix:
-- Missing hook → \`fettle init --hook-only\`
-- Missing config → \`fettle init\`
-- Missing plugins → \`fettle install\`
-- Outdated plugins → \`fettle update\`
+- Missing hook → \`fitout init --hook-only\`
+- Missing config → \`fitout init\`
+- Missing plugins → \`fitout install\`
+- Outdated plugins → \`fitout update\`
 `;
 
   writeFileSync(skillPath, content);
@@ -148,12 +148,12 @@ If there are issues, suggest the appropriate fix:
 }
 
 export function getProjectConfigPath(projectRoot: string): string {
-  return join(projectRoot, '.claude', 'fettle.toml');
+  return join(projectRoot, '.claude', 'fitout.toml');
 }
 
 export function getProjectConfigContent(profileName?: string): string {
   const profileLine = profileName ? `profiles = ["${profileName}"]` : '# profiles = ["default"]';
-  return `# Fettle project config - plugins listed here apply to this project
+  return `# Fitout project config - plugins listed here apply to this project
 ${profileLine}
 
 plugins = [
@@ -181,7 +181,7 @@ export function createDefaultProfile(profilePath: string): boolean {
 
   mkdirSync(dirname(profilePath), { recursive: true });
 
-  const content = `# Fettle profile - plugins listed here apply to all projects
+  const content = `# Fitout profile - plugins listed here apply to all projects
 # Add plugins in the format: "plugin-name@registry"
 
 plugins = [
@@ -237,11 +237,11 @@ export function runInit(options: InitOptions): InitResult {
   const settings = readClaudeSettings(settingsPath);
 
   // Check if already initialized
-  if (hasFettleHook(settings)) {
+  if (hasFitoutHook(settings)) {
     result.alreadyInitialized = true;
   } else {
     // Add hook
-    const updated = addFettleHook(settings);
+    const updated = addFitoutHook(settings);
     writeClaudeSettings(settingsPath, updated);
     result.hookAdded = true;
   }
@@ -264,8 +264,8 @@ export function runInit(options: InitOptions): InitResult {
 
   // Create skill if requested
   if (shouldCreateSkill) {
-    result.skillPath = getFettleSkillPath();
-    result.skillCreated = createFettleSkill();
+    result.skillPath = getFitoutSkillPath();
+    result.skillCreated = createFitoutSkill();
   }
 
   return result;

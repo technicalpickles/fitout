@@ -2,14 +2,14 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { existsSync } from 'node:fs';
 import { setupTestEnv, cleanTestTmp } from './test-utils.js';
-import { getClaudeHome, getFettleConfigHome } from './paths.js';
+import { getClaudeHome, getFitoutConfigHome } from './paths.js';
 
 describe('setupTestEnv', () => {
   it('creates isolated directories', () => {
     const ctx = setupTestEnv();
 
     expect(existsSync(ctx.claudeHome)).toBe(true);
-    expect(existsSync(ctx.fettleHome)).toBe(true);
+    expect(existsSync(ctx.fitoutHome)).toBe(true);
 
     ctx.cleanup();
   });
@@ -18,7 +18,7 @@ describe('setupTestEnv', () => {
     const ctx = setupTestEnv();
 
     expect(getClaudeHome()).toBe(ctx.claudeHome);
-    expect(getFettleConfigHome()).toBe(ctx.fettleHome);
+    expect(getFitoutConfigHome()).toBe(ctx.fitoutHome);
 
     ctx.cleanup();
   });

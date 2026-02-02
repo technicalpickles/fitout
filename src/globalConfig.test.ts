@@ -13,14 +13,14 @@ describe('getGlobalConfigDir', () => {
     vi.unstubAllEnvs();
   });
 
-  it('returns path under ~/.config/fettle by default', () => {
+  it('returns path under ~/.config/fitout by default', () => {
     expect(getGlobalConfigDir()).toContain('.config');
-    expect(getGlobalConfigDir()).toContain('fettle');
+    expect(getGlobalConfigDir()).toContain('fitout');
   });
 
-  it('respects FETTLE_CONFIG_HOME env var', () => {
-    vi.stubEnv('FETTLE_CONFIG_HOME', '/custom/fettle');
-    expect(getGlobalConfigDir()).toBe('/custom/fettle');
+  it('respects FITOUT_CONFIG_HOME env var', () => {
+    vi.stubEnv('FITOUT_CONFIG_HOME', '/custom/fitout');
+    expect(getGlobalConfigDir()).toBe('/custom/fitout');
   });
 });
 
@@ -33,9 +33,9 @@ describe('getGlobalConfigPath', () => {
     expect(getGlobalConfigPath()).toContain('config.toml');
   });
 
-  it('respects FETTLE_CONFIG_HOME env var', () => {
-    vi.stubEnv('FETTLE_CONFIG_HOME', '/custom/fettle');
-    expect(getGlobalConfigPath()).toBe('/custom/fettle/config.toml');
+  it('respects FITOUT_CONFIG_HOME env var', () => {
+    vi.stubEnv('FITOUT_CONFIG_HOME', '/custom/fitout');
+    expect(getGlobalConfigPath()).toBe('/custom/fitout/config.toml');
   });
 });
 

@@ -94,8 +94,8 @@ describe('formatStatusResolved', () => {
 
     const result = formatStatusResolved(diff, true);
 
-    expect(result).toContain('fettle update');
-    expect(result).toContain('fettle status --refresh');
+    expect(result).toContain('fitout update');
+    expect(result).toContain('fitout status --refresh');
   });
 
   it('hides refresh tip when showRefreshTip is false', () => {
@@ -117,8 +117,8 @@ describe('formatStatusResolved', () => {
 
     const result = formatStatusResolved(diff, false);
 
-    expect(result).toContain('fettle update');
-    expect(result).not.toContain('fettle status --refresh');
+    expect(result).toContain('fitout update');
+    expect(result).not.toContain('fitout status --refresh');
   });
 
   it('shows correct summary counts with outdated plugins', () => {
@@ -158,6 +158,6 @@ describe('formatStatusResolved', () => {
     const result = formatStatusResolved(diff, true);
 
     expect(result).not.toContain('Tip:');
-    expect(result).not.toContain('fettle update');
+    expect(result).not.toContain('fitout update');
   });
 });

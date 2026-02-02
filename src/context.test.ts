@@ -8,7 +8,7 @@ import { findConfigPath, resolveProjectRoot, getProfilesDir } from './context.js
 // Derive project root from this file's location (portable across machines)
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = dirname(__dirname); // src/../ = project root
-const TEST_CONFIG_PATH = join(PROJECT_ROOT, '.claude', 'fettle.toml');
+const TEST_CONFIG_PATH = join(PROJECT_ROOT, '.claude', 'fitout.toml');
 
 describe('resolveProjectRoot', () => {
   it('returns cwd when no git root exists', () => {
@@ -69,12 +69,12 @@ describe('getProfilesDir', () => {
 
   it('returns profiles directory under user config', () => {
     const result = getProfilesDir();
-    expect(result).toBe(join(homedir(), '.config', 'fettle', 'profiles'));
+    expect(result).toBe(join(homedir(), '.config', 'fitout', 'profiles'));
   });
 
-  it('respects FETTLE_CONFIG_HOME env var', () => {
-    vi.stubEnv('FETTLE_CONFIG_HOME', '/custom/fettle');
+  it('respects FITOUT_CONFIG_HOME env var', () => {
+    vi.stubEnv('FITOUT_CONFIG_HOME', '/custom/fitout');
     const result = getProfilesDir();
-    expect(result).toBe('/custom/fettle/profiles');
+    expect(result).toBe('/custom/fitout/profiles');
   });
 });

@@ -1,6 +1,6 @@
 // src/hookError.ts
 export function formatHookError(message: string): string {
-  return `[fettle] ${message}\n`;
+  return `[fitout] ${message}\n`;
 }
 
 export function writeHookError(message: string): void {
