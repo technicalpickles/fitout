@@ -1,19 +1,13 @@
 // src/globalConfig.ts
-import { join, dirname } from 'node:path';
-import { homedir } from 'node:os';
+import { dirname } from 'node:path';
 import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
 import { parse, stringify } from 'smol-toml';
+import { getGlobalConfigDir, getGlobalConfigPath } from './paths.js';
+
+export { getGlobalConfigDir, getGlobalConfigPath } from './paths.js';
 
 export interface GlobalConfig {
   marketplaces?: Record<string, string>;
-}
-
-export function getGlobalConfigDir(): string {
-  return join(homedir(), '.config', 'fettle');
-}
-
-export function getGlobalConfigPath(): string {
-  return join(getGlobalConfigDir(), 'config.toml');
 }
 
 export function readGlobalConfig(): GlobalConfig {

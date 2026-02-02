@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { join, dirname } from 'node:path';
 import { mkdtempSync, writeFileSync, rmSync, existsSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -9,15 +9,33 @@ import {
 } from './globalConfig.js';
 
 describe('getGlobalConfigDir', () => {
-  it('returns path under ~/.config/fettle', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('returns path under ~/.config/fettle by default', () => {
     expect(getGlobalConfigDir()).toContain('.config');
     expect(getGlobalConfigDir()).toContain('fettle');
+  });
+
+  it('respects FETTLE_CONFIG_HOME env var', () => {
+    vi.stubEnv('FETTLE_CONFIG_HOME', '/custom/fettle');
+    expect(getGlobalConfigDir()).toBe('/custom/fettle');
   });
 });
 
 describe('getGlobalConfigPath', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it('returns path to config.toml', () => {
     expect(getGlobalConfigPath()).toContain('config.toml');
+  });
+
+  it('respects FETTLE_CONFIG_HOME env var', () => {
+    vi.stubEnv('FETTLE_CONFIG_HOME', '/custom/fettle');
+    expect(getGlobalConfigPath()).toBe('/custom/fettle/config.toml');
   });
 });
 
