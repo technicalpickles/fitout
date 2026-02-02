@@ -14,6 +14,7 @@ export interface PresentPluginResolved {
   enabled: boolean;
   projectPath?: string;
   source: string;
+  constraint: string | null;
 }
 
 export interface PluginDiffResolved {
@@ -61,6 +62,7 @@ export function diffPluginsResolved(
     .map((p) => ({
       ...p,
       source: desiredMap.get(p.id)!.source,
+      constraint: desiredMap.get(p.id)!.constraint,
     }));
 
   return { missing, extra, present };

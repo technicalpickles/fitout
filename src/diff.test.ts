@@ -55,22 +55,22 @@ describe('diffPluginsResolved', () => {
 
   it('tracks provenance for missing plugins', () => {
     const desired: ResolvedPlugin[] = [
-      { id: 'plugin-a@registry', source: 'default' },
-      { id: 'plugin-b@registry', source: 'project' },
+      { id: 'plugin-a@registry', source: 'default', constraint: null },
+      { id: 'plugin-b@registry', source: 'project', constraint: null },
     ];
     const installed: InstalledPlugin[] = [];
 
     const result = diffPluginsResolved(desired, installed, projectPath);
 
     expect(result.missing).toEqual([
-      { id: 'plugin-a@registry', source: 'default' },
-      { id: 'plugin-b@registry', source: 'project' },
+      { id: 'plugin-a@registry', source: 'default', constraint: null },
+      { id: 'plugin-b@registry', source: 'project', constraint: null },
     ]);
   });
 
   it('tracks provenance for present plugins', () => {
     const desired: ResolvedPlugin[] = [
-      { id: 'plugin-a@registry', source: 'backend' },
+      { id: 'plugin-a@registry', source: 'backend', constraint: null },
     ];
     const installed: InstalledPlugin[] = [
       { id: 'plugin-a@registry', version: '1.0', scope: 'local', enabled: true, projectPath },
@@ -81,5 +81,18 @@ describe('diffPluginsResolved', () => {
     expect(result.present).toEqual([
       expect.objectContaining({ id: 'plugin-a@registry', source: 'backend' }),
     ]);
+  });
+
+  it('passes through constraint from resolved plugins', () => {
+    const desired: ResolvedPlugin[] = [
+      { id: 'plugin-a@registry', source: 'default', constraint: '1.0.0' },
+    ];
+    const installed: InstalledPlugin[] = [
+      { id: 'plugin-a@registry', version: '1.0', scope: 'local', enabled: true, projectPath },
+    ];
+
+    const result = diffPluginsResolved(desired, installed, projectPath);
+
+    expect(result.present[0].constraint).toBe('1.0.0');
   });
 });
