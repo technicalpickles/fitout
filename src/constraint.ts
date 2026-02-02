@@ -123,3 +123,16 @@ export function mergeConstraints(existing: string | null, incoming: string | nul
   if (incoming === null) return existing;
   return compareVersions(existing, incoming) >= 0 ? existing : incoming;
 }
+
+/**
+ * Format parse errors for user-friendly display.
+ */
+export function formatParseErrors(errors: ParseError[]): string {
+  if (errors.length === 0) return '';
+
+  const lines = ['Invalid plugin constraints:'];
+  for (const error of errors) {
+    lines.push(`  "${error.input}": ${error.message}`);
+  }
+  return lines.join('\n');
+}

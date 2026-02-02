@@ -1,6 +1,6 @@
 // src/constraint.test.ts
 import { describe, it, expect } from 'vitest';
-import { parsePluginString, parsePluginList, isParsedPlugin, isParseError, satisfiesConstraint, mergeConstraints, ParsedPlugin, ParseError } from './constraint.js';
+import { parsePluginString, parsePluginList, isParsedPlugin, isParseError, satisfiesConstraint, mergeConstraints, formatParseErrors, ParsedPlugin, ParseError } from './constraint.js';
 
 describe('parsePluginString', () => {
   it('parses plugin without constraint', () => {
@@ -179,5 +179,32 @@ describe('mergeConstraints', () => {
 
   it('returns either when equal', () => {
     expect(mergeConstraints('1.0.0', '1.0.0')).toBe('1.0.0');
+  });
+});
+
+describe('formatParseErrors', () => {
+  it('formats single error', () => {
+    const errors = [{ input: 'git@marketplace >= abc', message: 'Invalid version "abc"' }];
+    const result = formatParseErrors(errors);
+    expect(result).toBe(
+      'Invalid plugin constraints:\n  "git@marketplace >= abc": Invalid version "abc"'
+    );
+  });
+
+  it('formats multiple errors', () => {
+    const errors = [
+      { input: 'git@marketplace >= abc', message: 'Invalid version "abc"' },
+      { input: 'other@marketplace < 1.0', message: 'Unsupported operator "<"' },
+    ];
+    const result = formatParseErrors(errors);
+    expect(result).toBe(
+      'Invalid plugin constraints:\n' +
+        '  "git@marketplace >= abc": Invalid version "abc"\n' +
+        '  "other@marketplace < 1.0": Unsupported operator "<"'
+    );
+  });
+
+  it('returns empty string for no errors', () => {
+    expect(formatParseErrors([])).toBe('');
   });
 });
