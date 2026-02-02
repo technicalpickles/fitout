@@ -1,8 +1,10 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { homedir } from 'node:os';
 import { getConfiguredMarketplaces } from './globalConfig.js';
+import { getMarketplacesDir } from './paths.js';
+
+export { getMarketplacesDir } from './paths.js';
 
 export interface AvailablePlugin {
   id: string; // "git@pickled-claude-plugins"
@@ -19,10 +21,6 @@ interface MarketplacePlugin {
 interface MarketplaceManifest {
   name: string;
   plugins: MarketplacePlugin[];
-}
-
-export function getMarketplacesDir(): string {
-  return join(homedir(), '.claude', 'plugins', 'marketplaces');
 }
 
 export function listAvailablePlugins(): AvailablePlugin[] {
