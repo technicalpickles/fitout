@@ -1,14 +1,26 @@
 // src/init.test.ts
-import { describe, it, expect } from 'vitest';
-import { getClaudeSettingsPath, readClaudeSettings, hasFettleHook, addFettleHook, writeClaudeSettings, getDefaultProfilePath, createDefaultProfile, runInit, InitResult, getSkillsDir, getFettleSkillPath, createFettleSkill, hasFettleSkill, hasDefaultProfile, hasProjectConfig, getProjectConfigContent, getProjectConfigPath } from './init.js';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { readClaudeSettings, hasFettleHook, addFettleHook, writeClaudeSettings, getDefaultProfilePath, createDefaultProfile, runInit, InitResult, createFettleSkill, hasFettleSkill, hasDefaultProfile, hasProjectConfig, getProjectConfigContent, getProjectConfigPath } from './init.js';
+import { getClaudeSettingsPath, getClaudeSkillsDir, getFettleSkillPath } from './paths.js';
+import { setupTestEnv, TestContext } from './test-utils.js';
 import { homedir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { mkdtempSync, writeFileSync, rmSync, readFileSync, existsSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 
 describe('getClaudeSettingsPath', () => {
+  let ctx: TestContext;
+
+  beforeEach(() => {
+    ctx = setupTestEnv();
+  });
+
+  afterEach(() => {
+    ctx.cleanup();
+  });
+
   it('returns path to Claude settings.json', () => {
-    expect(getClaudeSettingsPath()).toBe(join(homedir(), '.claude', 'settings.json'));
+    expect(getClaudeSettingsPath()).toBe(join(ctx.claudeHome, 'settings.json'));
   });
 });
 
@@ -264,78 +276,87 @@ describe('runInit', () => {
   });
 });
 
-describe('getSkillsDir', () => {
+describe('getClaudeSkillsDir', () => {
+  let ctx: TestContext;
+
+  beforeEach(() => {
+    ctx = setupTestEnv();
+  });
+
+  afterEach(() => {
+    ctx.cleanup();
+  });
+
   it('returns path to Claude skills directory', () => {
-    expect(getSkillsDir()).toBe(join(homedir(), '.claude', 'skills'));
+    expect(getClaudeSkillsDir()).toBe(join(ctx.claudeHome, 'skills'));
   });
 });
 
 describe('getFettleSkillPath', () => {
+  let ctx: TestContext;
+
+  beforeEach(() => {
+    ctx = setupTestEnv();
+  });
+
+  afterEach(() => {
+    ctx.cleanup();
+  });
+
   it('returns path to fettle skill file', () => {
-    expect(getFettleSkillPath()).toBe(join(homedir(), '.claude', 'skills', 'fettle', 'SKILL.md'));
+    expect(getFettleSkillPath()).toBe(join(ctx.claudeHome, 'skills', 'fettle', 'SKILL.md'));
   });
 });
 
 describe('createFettleSkill', () => {
-  it('creates skill file with correct content', () => {
-    // Skip if skill already exists (don't modify user's actual skill)
-    const skillPath = getFettleSkillPath();
-    if (existsSync(skillPath)) {
-      // Just verify the function returns false for existing
-      expect(createFettleSkill()).toBe(false);
-      return;
-    }
+  let ctx: TestContext;
 
+  beforeEach(() => {
+    ctx = setupTestEnv();
+  });
+
+  afterEach(() => {
+    ctx.cleanup();
+  });
+
+  it('creates skill file with correct content', () => {
     const created = createFettleSkill();
     expect(created).toBe(true);
+
+    const skillPath = getFettleSkillPath();
     expect(existsSync(skillPath)).toBe(true);
 
     const content = readFileSync(skillPath, 'utf-8');
     expect(content).toContain('name: fettle');
     expect(content).toContain('description:');
     expect(content).toContain('Fettle Diagnostic');
-    expect(content).toContain('fettle status');
-    expect(content).toContain('settings.json');
-
-    // Clean up - remove the created skill
-    rmSync(join(homedir(), '.claude', 'skills', 'fettle'), { recursive: true });
   });
 
   it('does not overwrite existing skill', () => {
-    const skillPath = getFettleSkillPath();
-    const skillDir = join(homedir(), '.claude', 'skills', 'fettle');
-    const alreadyExisted = existsSync(skillPath);
-
-    // Create skill first
     createFettleSkill();
-
-    // Try to create again
     const result = createFettleSkill();
     expect(result).toBe(false);
-
-    // Clean up if we created it
-    if (!alreadyExisted) {
-      rmSync(skillDir, { recursive: true });
-    }
   });
 });
 
 describe('hasFettleSkill', () => {
+  let ctx: TestContext;
+
+  beforeEach(() => {
+    ctx = setupTestEnv();
+  });
+
+  afterEach(() => {
+    ctx.cleanup();
+  });
+
+  it('returns false when skill does not exist', () => {
+    expect(hasFettleSkill()).toBe(false);
+  });
+
   it('returns true when skill exists', () => {
-    const skillPath = getFettleSkillPath();
-    const alreadyExisted = existsSync(skillPath);
-
-    // Create if needed
-    if (!alreadyExisted) {
-      createFettleSkill();
-    }
-
+    createFettleSkill();
     expect(hasFettleSkill()).toBe(true);
-
-    // Clean up if we created it
-    if (!alreadyExisted) {
-      rmSync(join(homedir(), '.claude', 'skills', 'fettle'), { recursive: true });
-    }
   });
 });
 

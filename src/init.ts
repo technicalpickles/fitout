@@ -1,11 +1,7 @@
 // src/init.ts
 import { join, dirname } from 'node:path';
-import { homedir } from 'node:os';
 import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
-
-export function getClaudeSettingsPath(): string {
-  return join(homedir(), '.claude', 'settings.json');
-}
+import { getClaudeSettingsPath, getClaudeSkillsDir, getFettleSkillPath } from './paths.js';
 
 export function readClaudeSettings(path: string): Record<string, unknown> {
   if (!existsSync(path)) {
@@ -71,14 +67,6 @@ export function writeClaudeSettings(path: string, settings: Record<string, unkno
 
 export function getDefaultProfilePath(profilesDir: string, name: string): string {
   return join(profilesDir, `${name}.toml`);
-}
-
-export function getSkillsDir(): string {
-  return join(homedir(), '.claude', 'skills');
-}
-
-export function getFettleSkillPath(): string {
-  return join(getSkillsDir(), 'fettle', 'SKILL.md');
 }
 
 export function hasFettleSkill(): boolean {
