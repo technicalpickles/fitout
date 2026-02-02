@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { formatStatus, formatStatusResolved, StatusDiff } from './status.js';
 import { PluginDiff, PluginDiffResolved } from './diff.js';
+import { ConstraintOverride } from './profiles.js';
 
 describe('formatStatus', () => {
   it('formats all present as success', () => {
@@ -32,11 +33,11 @@ describe('formatStatusResolved', () => {
   it('shows provenance for non-project plugins', () => {
     const diff: StatusDiff = {
       present: [
-        { id: 'plugin-a@registry', version: '1.0', scope: 'local', enabled: true, source: 'default' },
-        { id: 'plugin-b@registry', version: '1.0', scope: 'local', enabled: true, source: 'project' },
+        { id: 'plugin-a@registry', version: '1.0', scope: 'local', enabled: true, source: 'default', constraint: null },
+        { id: 'plugin-b@registry', version: '1.0', scope: 'local', enabled: true, source: 'project', constraint: null },
       ],
       missing: [
-        { id: 'plugin-c@registry', source: 'backend' },
+        { id: 'plugin-c@registry', source: 'backend', constraint: null },
       ],
       extra: [],
       outdated: [],
@@ -44,8 +45,8 @@ describe('formatStatusResolved', () => {
 
     const result = formatStatusResolved(diff, false);
 
-    expect(result).toContain('✓ plugin-a@registry (from: default)');
-    expect(result).toContain('✓ plugin-b@registry');
+    expect(result).toContain('✓ plugin-a@registry 1.0 (from: default)');
+    expect(result).toContain('✓ plugin-b@registry 1.0');
     expect(result).not.toContain('plugin-b@registry (from:'); // no provenance for project
     expect(result).toContain('✗ plugin-c@registry (from: backend) (missing)');
   });
@@ -53,7 +54,7 @@ describe('formatStatusResolved', () => {
   it('shows outdated plugins with version info', () => {
     const diff: StatusDiff = {
       present: [
-        { id: 'plugin-a@registry', version: '1.0.0', scope: 'local', enabled: true, source: 'project' },
+        { id: 'plugin-a@registry', version: '1.0.0', scope: 'local', enabled: true, source: 'project', constraint: null },
       ],
       missing: [],
       extra: [],
@@ -78,7 +79,7 @@ describe('formatStatusResolved', () => {
   it('shows update tip when there are outdated plugins', () => {
     const diff: StatusDiff = {
       present: [
-        { id: 'plugin-a@registry', version: '1.0.0', scope: 'local', enabled: true, source: 'project' },
+        { id: 'plugin-a@registry', version: '1.0.0', scope: 'local', enabled: true, source: 'project', constraint: null },
       ],
       missing: [],
       extra: [],
@@ -101,7 +102,7 @@ describe('formatStatusResolved', () => {
   it('hides refresh tip when showRefreshTip is false', () => {
     const diff: StatusDiff = {
       present: [
-        { id: 'plugin-a@registry', version: '1.0.0', scope: 'local', enabled: true, source: 'project' },
+        { id: 'plugin-a@registry', version: '1.0.0', scope: 'local', enabled: true, source: 'project', constraint: null },
       ],
       missing: [],
       extra: [],
@@ -124,8 +125,8 @@ describe('formatStatusResolved', () => {
   it('shows correct summary counts with outdated plugins', () => {
     const diff: StatusDiff = {
       present: [
-        { id: 'plugin-a@registry', version: '1.0.0', scope: 'local', enabled: true, source: 'project' },
-        { id: 'plugin-b@registry', version: '2.0.0', scope: 'local', enabled: true, source: 'project' },
+        { id: 'plugin-a@registry', version: '1.0.0', scope: 'local', enabled: true, source: 'project', constraint: null },
+        { id: 'plugin-b@registry', version: '2.0.0', scope: 'local', enabled: true, source: 'project', constraint: null },
       ],
       missing: [],
       extra: [],
@@ -148,7 +149,7 @@ describe('formatStatusResolved', () => {
   it('does not show tips when no outdated plugins', () => {
     const diff: StatusDiff = {
       present: [
-        { id: 'plugin-a@registry', version: '1.0.0', scope: 'local', enabled: true, source: 'project' },
+        { id: 'plugin-a@registry', version: '1.0.0', scope: 'local', enabled: true, source: 'project', constraint: null },
       ],
       missing: [],
       extra: [],
@@ -159,5 +160,52 @@ describe('formatStatusResolved', () => {
 
     expect(result).not.toContain('Tip:');
     expect(result).not.toContain('fitout update');
+  });
+
+  it('shows version for present plugins', () => {
+    const diff: StatusDiff = {
+      present: [
+        { id: 'plugin@registry', version: '1.0.0', scope: 'local', enabled: true, source: 'project', constraint: null },
+      ],
+      missing: [],
+      extra: [],
+      outdated: [],
+    };
+
+    const output = formatStatusResolved(diff, false);
+    expect(output).toContain('plugin@registry 1.0.0');
+  });
+
+  it('shows constraint when present', () => {
+    const diff: StatusDiff = {
+      present: [
+        { id: 'plugin@registry', version: '1.0.0', scope: 'local', enabled: true, source: 'project', constraint: '1.0.0' },
+      ],
+      missing: [],
+      extra: [],
+      outdated: [],
+    };
+
+    const output = formatStatusResolved(diff, false);
+    expect(output).toContain('>= 1.0.0');
+  });
+
+  it('shows constraint override warnings', () => {
+    const diff: StatusDiff = {
+      present: [
+        { id: 'plugin@registry', version: '2.0.0', scope: 'local', enabled: true, source: 'default', constraint: '2.0.0' },
+      ],
+      missing: [],
+      extra: [],
+      outdated: [],
+    };
+    const overrides: ConstraintOverride[] = [
+      { pluginId: 'plugin@registry', projectConstraint: '1.0.0', winningConstraint: '2.0.0', winningSource: 'default' },
+    ];
+
+    const output = formatStatusResolved(diff, false, overrides);
+    expect(output).toContain('Warnings:');
+    expect(output).toContain('>= 1.0.0 (project) overridden by >= 2.0.0');
+    expect(output).toContain('To fix:');
   });
 });

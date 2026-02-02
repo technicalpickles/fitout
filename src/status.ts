@@ -3,7 +3,7 @@ import { findConfigPath, resolveProjectRoot, getProfilesDir } from './context.js
 import { parseConfig, FettleConfig } from './config.js';
 import { listPlugins, InstalledPlugin } from './claude.js';
 import { diffPlugins, PluginDiff, PluginDiffResolved, diffPluginsResolved } from './diff.js';
-import { resolveProfiles } from './profiles.js';
+import { resolveProfiles, ConstraintOverride } from './profiles.js';
 import { colors, symbols, provenanceColor, formatContextLine } from './colors.js';
 import { listAvailablePlugins, refreshMarketplaces } from './marketplace.js';
 import { findOutdatedPlugins, OutdatedPlugin } from './update.js';
@@ -55,18 +55,25 @@ export interface StatusDiff extends PluginDiffResolved {
   outdated: OutdatedPlugin[];
 }
 
-export function formatStatusResolved(diff: StatusDiff, showRefreshTip: boolean): string {
+export function formatStatusResolved(
+  diff: StatusDiff,
+  showRefreshTip: boolean,
+  constraintOverrides: ConstraintOverride[] = []
+): string {
   const lines: string[] = [];
   const outdatedIds = new Set(diff.outdated.map((p) => p.id));
 
   for (const plugin of diff.present) {
     const outdated = diff.outdated.find((o) => o.id === plugin.id);
+    const constraintStr = plugin.constraint ? ` >= ${plugin.constraint}` : '';
+
     if (outdated) {
       lines.push(
-        `${symbols.outdated} ${plugin.id} ${colors.warning(`v${outdated.installedVersion} → v${outdated.availableVersion}`)}${formatProvenance(plugin.source)} ${colors.warning('(outdated)')}`
+        `${symbols.outdated} ${plugin.id} ${colors.warning(`v${outdated.installedVersion} → v${outdated.availableVersion}`)}${constraintStr}${formatProvenance(plugin.source)} ${colors.warning('(outdated)')}`
       );
     } else {
-      lines.push(`${symbols.present} ${plugin.id}${formatProvenance(plugin.source)}`);
+      const versionStr = plugin.version ? ` ${plugin.version}` : '';
+      lines.push(`${symbols.present} ${plugin.id}${versionStr}${constraintStr}${formatProvenance(plugin.source)}`);
     }
   }
 
@@ -95,6 +102,20 @@ export function formatStatusResolved(diff: StatusDiff, showRefreshTip: boolean):
     lines.push(colors.dim(`Tip: Run \`fitout update\` to update outdated plugins.`));
     if (showRefreshTip) {
       lines.push(colors.dim(`     Run \`fitout status --refresh\` to check for newer versions.`));
+    }
+  }
+
+  // Add constraint override warnings
+  if (constraintOverrides.length > 0) {
+    lines.push('');
+    lines.push(colors.header('Warnings:'));
+    for (const override of constraintOverrides) {
+      lines.push(
+        `  ${override.pluginId}: constraint >= ${override.projectConstraint} (project) overridden by >= ${override.winningConstraint} (${override.winningSource})`
+      );
+      lines.push(
+        `    To fix: update .claude/fitout.toml to ">= ${override.winningConstraint}" or remove the constraint`
+      );
     }
   }
 
@@ -204,8 +225,10 @@ export function runStatus(cwd: string, options: StatusOptions = {}): { output: s
     profiles,
   });
 
+  const formatted = formatStatusResolved(statusDiff, showRefreshTip, resolution.constraintOverrides);
+
   return {
-    output: `${globalStatus}\n\n${contextLine}${colors.header('Plugins:')}\n${formatStatusResolved(statusDiff, showRefreshTip)}`,
+    output: `${globalStatus}\n\n${contextLine}${colors.header('Plugins:')}\n${formatted}`,
     exitCode: diff.missing.length > 0 ? 1 : 0,
   };
 }
