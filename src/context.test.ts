@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
 import { writeFileSync, unlinkSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
@@ -61,8 +61,18 @@ describe('findConfigPath', () => {
 });
 
 describe('getProfilesDir', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it('returns profiles directory under user config', () => {
     const result = getProfilesDir();
     expect(result).toBe(join(homedir(), '.config', 'fettle', 'profiles'));
+  });
+
+  it('respects FETTLE_CONFIG_HOME env var', () => {
+    vi.stubEnv('FETTLE_CONFIG_HOME', '/custom/fettle');
+    const result = getProfilesDir();
+    expect(result).toBe('/custom/fettle/profiles');
   });
 });
