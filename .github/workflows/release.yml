@@ -22,6 +22,7 @@ jobs:
   release:
     needs: test
     runs-on: ubuntu-latest
+    environment: npm-publish
     permissions:
       contents: write
       issues: write
@@ -41,4 +42,4 @@ jobs:
       - run: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
