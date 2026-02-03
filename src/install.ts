@@ -163,13 +163,13 @@ export function runInstall(cwd: string, options: { dryRun?: boolean; hook?: bool
 
   // Ensure configured marketplaces are installed (skip in hook mode for cleaner output)
   if (!options.hook && hasGlobalConfig()) {
-    const marketplaces = getConfiguredMarketplaces();
-    if (Object.keys(marketplaces).length > 0) {
-      const marketplaceResult = ensureMarketplaces();
+    const marketplaceSources = getConfiguredMarketplaces();
+    if (marketplaceSources.length > 0) {
+      const marketplaceResult = ensureMarketplaces(marketplaceSources);
       if (marketplaceResult.added.length > 0) {
         console.log(colors.header('Marketplaces:'));
-        for (const name of marketplaceResult.added) {
-          console.log(`  ${symbols.install} ${name}`);
+        for (const source of marketplaceResult.added) {
+          console.log(`  ${symbols.install} ${source}`);
         }
         console.log('');
       }
