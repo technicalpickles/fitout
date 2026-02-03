@@ -1,7 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { getConfiguredMarketplaces } from './globalConfig.js';
 import { getMarketplacesDir } from './paths.js';
 
 export { getMarketplacesDir } from './paths.js';
@@ -118,30 +117,29 @@ export function addMarketplace(source: string): void {
 export interface EnsureMarketplacesResult {
   added: string[];
   alreadyInstalled: string[];
-  failed: { name: string; error: string }[];
+  failed: { source: string; error: string }[];
 }
 
 /**
- * Ensure all configured marketplaces are installed
+ * Ensure all configured marketplace sources are installed
  */
-export function ensureMarketplaces(): EnsureMarketplacesResult {
-  const configured = getConfiguredMarketplaces();
+export function ensureMarketplaces(sources: string[]): EnsureMarketplacesResult {
   const result: EnsureMarketplacesResult = {
     added: [],
     alreadyInstalled: [],
     failed: [],
   };
 
-  for (const [name, source] of Object.entries(configured)) {
-    if (isMarketplaceInstalled(name)) {
-      result.alreadyInstalled.push(name);
+  for (const source of sources) {
+    if (isMarketplaceSourceInstalled(source)) {
+      result.alreadyInstalled.push(source);
     } else {
       try {
         addMarketplace(source);
-        result.added.push(name);
+        result.added.push(source);
       } catch (err) {
         result.failed.push({
-          name,
+          source,
           error: err instanceof Error ? err.message : 'Unknown error',
         });
       }

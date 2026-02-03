@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { listAvailablePlugins, getMarketplacesDir, listInstalledMarketplaces, isMarketplaceSourceInstalled } from './marketplace.js';
+import { listAvailablePlugins, getMarketplacesDir, listInstalledMarketplaces, isMarketplaceSourceInstalled, ensureMarketplaces } from './marketplace.js';
 
 vi.mock('node:fs');
 vi.mock('node:child_process');
@@ -254,5 +254,57 @@ describe('isMarketplaceSourceInstalled', () => {
     mockExecFileSync.mockReturnValue('[]');
 
     expect(isMarketplaceSourceInstalled('https://github.com/owner/repo')).toBe(false);
+  });
+});
+
+describe('ensureMarketplaces', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
+  it('skips already installed marketplaces by source', () => {
+    // Mock listInstalledMarketplaces to show one installed
+    mockExecFileSync.mockReturnValue(JSON.stringify([
+      {
+        name: 'my-marketplace',
+        source: 'github',
+        repo: 'owner/my-marketplace',
+        installLocation: '/path',
+      },
+    ]));
+
+    const result = ensureMarketplaces(['https://github.com/owner/my-marketplace']);
+
+    expect(result.alreadyInstalled).toEqual(['https://github.com/owner/my-marketplace']);
+    expect(result.added).toEqual([]);
+  });
+
+  it('adds marketplaces not yet installed', () => {
+    // First call: list (empty), Second call: add (succeeds)
+    mockExecFileSync
+      .mockReturnValueOnce('[]')  // listInstalledMarketplaces
+      .mockReturnValueOnce('');   // addMarketplace
+
+    const result = ensureMarketplaces(['https://github.com/owner/new-marketplace']);
+
+    expect(result.added).toEqual(['https://github.com/owner/new-marketplace']);
+    expect(mockExecFileSync).toHaveBeenCalledWith(
+      'claude',
+      ['plugin', 'marketplace', 'add', 'https://github.com/owner/new-marketplace'],
+      expect.anything()
+    );
+  });
+
+  it('handles add failures', () => {
+    mockExecFileSync
+      .mockReturnValueOnce('[]')  // listInstalledMarketplaces
+      .mockImplementationOnce(() => { throw new Error('Network error'); });
+
+    const result = ensureMarketplaces(['https://github.com/owner/broken']);
+
+    expect(result.failed).toEqual([{
+      source: 'https://github.com/owner/broken',
+      error: 'Network error',
+    }]);
   });
 });
