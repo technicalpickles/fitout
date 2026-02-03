@@ -82,29 +82,6 @@ export function refreshMarketplaces(): void {
 }
 
 /**
- * Get list of marketplace names that are installed locally
- */
-export function getInstalledMarketplaces(): string[] {
-  const marketplacesDir = getMarketplacesDir();
-
-  if (!existsSync(marketplacesDir)) {
-    return [];
-  }
-
-  return readdirSync(marketplacesDir, { withFileTypes: true })
-    .filter((d) => d.isDirectory())
-    .map((d) => d.name);
-}
-
-/**
- * Check if a marketplace is installed
- */
-export function isMarketplaceInstalled(name: string): boolean {
-  const marketplacesDir = getMarketplacesDir();
-  return existsSync(join(marketplacesDir, name));
-}
-
-/**
  * Add a marketplace from a source URL
  */
 export function addMarketplace(source: string): void {
