@@ -7,7 +7,7 @@ import { resolveProfiles, ConstraintOverride } from './profiles.js';
 import { colors, symbols, provenanceColor, formatContextLine } from './colors.js';
 import { listAvailablePlugins, refreshMarketplaces } from './marketplace.js';
 import { findOutdatedPlugins, OutdatedPlugin } from './update.js';
-import { readClaudeSettings, hasFitoutHook, hasFitoutSkill } from './init.js';
+import { readClaudeSettings, getFitoutHookStatus, hasFitoutSkill, HookStatus } from './init.js';
 import { getClaudeSettingsPath } from './paths.js';
 
 export interface StatusOptions {
@@ -15,7 +15,7 @@ export interface StatusOptions {
 }
 
 export interface GlobalStatus {
-  hookInstalled: boolean;
+  hookStatus: HookStatus;
   skillInstalled: boolean;
   profiles: string[];
 }
@@ -25,8 +25,10 @@ export function formatGlobalStatus(status: GlobalStatus): string {
 
   lines.push(colors.header('Global:'));
 
-  if (status.hookInstalled) {
+  if (status.hookStatus === 'current') {
     lines.push(`  ${symbols.present} Hook installed`);
+  } else if (status.hookStatus === 'outdated') {
+    lines.push(`  ${symbols.outdated} Hook outdated ${colors.dim('(run `fitout init` to upgrade)')}`);
   } else {
     lines.push(`  ${symbols.missing} Hook ${colors.dim('(run `fitout init`)')}`);
   }
@@ -153,7 +155,7 @@ export function runStatus(cwd: string, options: StatusOptions = {}): { output: s
   // Check global status
   const settingsPath = getClaudeSettingsPath();
   const settings = readClaudeSettings(settingsPath);
-  const hookInstalled = hasFitoutHook(settings);
+  const hookStatus = getFitoutHookStatus(settings);
   const skillInstalled = hasFitoutSkill();
 
   const configPath = findConfigPath(cwd);
@@ -161,7 +163,7 @@ export function runStatus(cwd: string, options: StatusOptions = {}): { output: s
   if (!configPath) {
     // No project config - show global status and hint
     const globalStatus = formatGlobalStatus({
-      hookInstalled,
+      hookStatus,
       skillInstalled,
       profiles: [],
     });
@@ -220,7 +222,7 @@ export function runStatus(cwd: string, options: StatusOptions = {}): { output: s
 
   // Format global status
   const globalStatus = formatGlobalStatus({
-    hookInstalled,
+    hookStatus,
     skillInstalled,
     profiles,
   });
