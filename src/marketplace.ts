@@ -164,3 +164,32 @@ export function listInstalledMarketplaces(): InstalledMarketplace[] {
     return [];
   }
 }
+
+/**
+ * Normalize a marketplace source URL to extract owner/repo for comparison
+ */
+function normalizeGitHubSource(source: string): string | null {
+  // Match github.com URLs with or without .git suffix
+  const match = source.match(/github\.com\/([^/]+\/[^/.]+)/);
+  return match ? match[1] : null;
+}
+
+/**
+ * Check if a marketplace source URL is already installed
+ */
+export function isMarketplaceSourceInstalled(source: string): boolean {
+  const installed = listInstalledMarketplaces();
+  const normalizedSource = normalizeGitHubSource(source);
+
+  return installed.some((m) => {
+    // Check github source by repo
+    if (m.source === 'github' && m.repo && normalizedSource) {
+      return m.repo === normalizedSource;
+    }
+    // Check git source by URL
+    if (m.source === 'git' && m.url) {
+      return m.url === source;
+    }
+    return false;
+  });
+}

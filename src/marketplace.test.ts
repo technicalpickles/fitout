@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { listAvailablePlugins, getMarketplacesDir, listInstalledMarketplaces } from './marketplace.js';
+import { listAvailablePlugins, getMarketplacesDir, listInstalledMarketplaces, isMarketplaceSourceInstalled } from './marketplace.js';
 
 vi.mock('node:fs');
 vi.mock('node:child_process');
@@ -202,5 +202,57 @@ describe('listInstalledMarketplaces', () => {
     const result = listInstalledMarketplaces();
 
     expect(result).toEqual([]);
+  });
+});
+
+describe('isMarketplaceSourceInstalled', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
+  it('returns true when github source matches by repo', () => {
+    mockExecFileSync.mockReturnValue(JSON.stringify([
+      {
+        name: 'my-marketplace',
+        source: 'github',
+        repo: 'owner/my-marketplace',
+        installLocation: '/path',
+      },
+    ]));
+
+    expect(isMarketplaceSourceInstalled('https://github.com/owner/my-marketplace')).toBe(true);
+    expect(isMarketplaceSourceInstalled('https://github.com/owner/my-marketplace.git')).toBe(true);
+  });
+
+  it('returns true when git URL source matches exactly', () => {
+    mockExecFileSync.mockReturnValue(JSON.stringify([
+      {
+        name: 'git-marketplace',
+        source: 'git',
+        url: 'https://gitlab.com/owner/repo.git',
+        installLocation: '/path',
+      },
+    ]));
+
+    expect(isMarketplaceSourceInstalled('https://gitlab.com/owner/repo.git')).toBe(true);
+  });
+
+  it('returns false when source not found', () => {
+    mockExecFileSync.mockReturnValue(JSON.stringify([
+      {
+        name: 'other-marketplace',
+        source: 'github',
+        repo: 'owner/other',
+        installLocation: '/path',
+      },
+    ]));
+
+    expect(isMarketplaceSourceInstalled('https://github.com/owner/my-marketplace')).toBe(false);
+  });
+
+  it('handles empty installed list', () => {
+    mockExecFileSync.mockReturnValue('[]');
+
+    expect(isMarketplaceSourceInstalled('https://github.com/owner/repo')).toBe(false);
   });
 });
