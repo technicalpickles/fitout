@@ -1,6 +1,6 @@
 // src/init.test.ts
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { readClaudeSettings, hasFitoutHook, getFitoutHookStatus, addFitoutHook, upgradeFitoutHook, writeClaudeSettings, getDefaultProfilePath, createDefaultProfile, runInit, InitResult, createFitoutSkill, hasFitoutSkill, hasDefaultProfile, hasProjectConfig, getProjectConfigContent, getProjectConfigPath } from './init.js';
+import { readClaudeSettings, hasFitoutHook, getFitoutHookStatus, addFitoutHook, upgradeFitoutHook, writeClaudeSettings, getDefaultProfilePath, createDefaultProfile, runInit, InitResult, createFitoutSkill, hasFitoutSkill, hasDefaultProfile, hasProjectConfig, getProjectConfigContent, getProjectConfigPath, HOOK_COMMAND_DEFAULT, HOOK_COMMAND_DEV } from './init.js';
 import { getClaudeSettingsPath, getClaudeSkillsDir, getFitoutSkillPath } from './paths.js';
 import { setupTestEnv, TestContext } from './test-utils.js';
 import { homedir } from 'node:os';
@@ -51,13 +51,28 @@ describe('hasFitoutHook', () => {
     expect(hasFitoutHook({ env: {} })).toBe(false);
   });
 
-  it('returns true when fitout install hook exists', () => {
+  it('returns true when fitout install hook exists (dev)', () => {
     const settings = {
       hooks: {
         SessionStart: [
           {
             hooks: [
-              { type: 'command', command: 'fitout install --hook' }
+              { type: 'command', command: HOOK_COMMAND_DEV }
+            ]
+          }
+        ]
+      }
+    };
+    expect(hasFitoutHook(settings)).toBe(true);
+  });
+
+  it('returns true when npx fitout@latest install hook exists', () => {
+    const settings = {
+      hooks: {
+        SessionStart: [
+          {
+            hooks: [
+              { type: 'command', command: HOOK_COMMAND_DEFAULT }
             ]
           }
         ]
@@ -106,13 +121,28 @@ describe('getFitoutHookStatus', () => {
     expect(getFitoutHookStatus({ env: {} })).toBe('none');
   });
 
-  it('returns "current" when fitout install hook exists', () => {
+  it('returns "current" when dev hook exists', () => {
     const settings = {
       hooks: {
         SessionStart: [
           {
             hooks: [
-              { type: 'command', command: 'fitout install --hook' }
+              { type: 'command', command: HOOK_COMMAND_DEV }
+            ]
+          }
+        ]
+      }
+    };
+    expect(getFitoutHookStatus(settings)).toBe('current');
+  });
+
+  it('returns "current" when npx hook exists', () => {
+    const settings = {
+      hooks: {
+        SessionStart: [
+          {
+            hooks: [
+              { type: 'command', command: HOOK_COMMAND_DEFAULT }
             ]
           }
         ]
@@ -136,7 +166,7 @@ describe('getFitoutHookStatus', () => {
     expect(getFitoutHookStatus(settings)).toBe('outdated');
   });
 
-  it('returns "current" when both old and new hooks exist', () => {
+  it('returns "current" when both legacy and current hooks exist', () => {
     const settings = {
       hooks: {
         SessionStart: [
@@ -147,7 +177,7 @@ describe('getFitoutHookStatus', () => {
           },
           {
             hooks: [
-              { type: 'command', command: 'fitout install --hook' }
+              { type: 'command', command: HOOK_COMMAND_DEFAULT }
             ]
           }
         ]
@@ -197,19 +227,19 @@ describe('addFitoutHook', () => {
     expect(result.hooks?.SessionStart).toHaveLength(2);
   });
 
-  it('adds the correct hook structure', () => {
+  it('adds the correct hook structure with npx command', () => {
     const settings = {};
     const result = addFitoutHook(settings);
     expect(result.hooks?.SessionStart?.[0]).toEqual({
       hooks: [
-        { type: 'command', command: 'fitout install --hook' }
+        { type: 'command', command: HOOK_COMMAND_DEFAULT }
       ]
     });
   });
 });
 
 describe('upgradeFitoutHook', () => {
-  it('replaces fitout apply with fitout install', () => {
+  it('replaces fitout apply with npx fitout@latest install', () => {
     const settings = {
       hooks: {
         SessionStart: [
@@ -222,7 +252,7 @@ describe('upgradeFitoutHook', () => {
       }
     };
     const result = upgradeFitoutHook(settings);
-    expect(result.hooks?.SessionStart?.[0]?.hooks[0].command).toBe('fitout install --hook');
+    expect(result.hooks?.SessionStart?.[0]?.hooks[0].command).toBe(HOOK_COMMAND_DEFAULT);
   });
 
   it('preserves other hooks in the same matcher', () => {
@@ -242,7 +272,7 @@ describe('upgradeFitoutHook', () => {
     const result = upgradeFitoutHook(settings);
     expect(result.hooks?.SessionStart?.[0]?.hooks).toHaveLength(3);
     expect(result.hooks?.SessionStart?.[0]?.hooks[0].command).toBe('echo before');
-    expect(result.hooks?.SessionStart?.[0]?.hooks[1].command).toBe('fitout install --hook');
+    expect(result.hooks?.SessionStart?.[0]?.hooks[1].command).toBe(HOOK_COMMAND_DEFAULT);
     expect(result.hooks?.SessionStart?.[0]?.hooks[2].command).toBe('echo after');
   });
 
@@ -266,7 +296,7 @@ describe('upgradeFitoutHook', () => {
     const result = upgradeFitoutHook(settings);
     expect(result.hooks?.SessionStart).toHaveLength(2);
     expect(result.hooks?.SessionStart?.[0]?.hooks[0].command).toBe('echo first');
-    expect(result.hooks?.SessionStart?.[1]?.hooks[0].command).toBe('fitout install --hook');
+    expect(result.hooks?.SessionStart?.[1]?.hooks[0].command).toBe(HOOK_COMMAND_DEFAULT);
   });
 
   it('does not modify settings without SessionStart hooks', () => {
@@ -356,16 +386,16 @@ describe('createDefaultProfile', () => {
 });
 
 describe('runInit', () => {
-  it('returns already initialized when current hook exists', () => {
+  it('returns already initialized when current hook exists (npx)', () => {
     const tmpDir = mkdtempSync(join(tmpdir(), 'fitout-test-'));
     const settingsPath = join(tmpDir, 'settings.json');
     const profilesDir = join(tmpDir, 'profiles');
 
-    // Create settings with current hook
+    // Create settings with current npx hook
     writeFileSync(settingsPath, JSON.stringify({
       hooks: {
         SessionStart: [{
-          hooks: [{ type: 'command', command: 'fitout install --hook' }]
+          hooks: [{ type: 'command', command: HOOK_COMMAND_DEFAULT }]
         }]
       }
     }));
@@ -379,7 +409,30 @@ describe('runInit', () => {
     rmSync(tmpDir, { recursive: true });
   });
 
-  it('upgrades outdated hook', () => {
+  it('returns already initialized when current hook exists (dev)', () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'fitout-test-'));
+    const settingsPath = join(tmpDir, 'settings.json');
+    const profilesDir = join(tmpDir, 'profiles');
+
+    // Create settings with current dev hook
+    writeFileSync(settingsPath, JSON.stringify({
+      hooks: {
+        SessionStart: [{
+          hooks: [{ type: 'command', command: HOOK_COMMAND_DEV }]
+        }]
+      }
+    }));
+
+    const result = runInit({ settingsPath, profilesDir, createProfile: false });
+
+    expect(result.hookAdded).toBe(false);
+    expect(result.hookUpgraded).toBe(false);
+    expect(result.alreadyInitialized).toBe(true);
+
+    rmSync(tmpDir, { recursive: true });
+  });
+
+  it('upgrades outdated hook to npx command', () => {
     const tmpDir = mkdtempSync(join(tmpdir(), 'fitout-test-'));
     const settingsPath = join(tmpDir, 'settings.json');
     const profilesDir = join(tmpDir, 'profiles');
@@ -399,9 +452,9 @@ describe('runInit', () => {
     expect(result.hookUpgraded).toBe(true);
     expect(result.alreadyInitialized).toBe(false);
 
-    // Verify settings file was updated
+    // Verify settings file was updated to npx command
     const settings = JSON.parse(readFileSync(settingsPath, 'utf-8'));
-    expect(settings.hooks.SessionStart[0].hooks[0].command).toBe('fitout install --hook');
+    expect(settings.hooks.SessionStart[0].hooks[0].command).toBe(HOOK_COMMAND_DEFAULT);
 
     rmSync(tmpDir, { recursive: true });
   });

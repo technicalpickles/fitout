@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `fitout status` command to show plugin diff (missing, present, extra)
-- `fitout apply` command to install missing plugins
+- `fitout install` command to install missing plugins
 - `fitout init` command for Claude Code integration setup
 - Profile support for sharing plugin sets across projects
 - Automatic `default` profile inclusion

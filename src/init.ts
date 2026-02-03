@@ -17,25 +17,36 @@ export function readClaudeSettings(path: string): Record<string, unknown> {
 
 export type HookStatus = 'none' | 'current' | 'outdated';
 
+// Hook command patterns
+export const HOOK_COMMAND_DEFAULT = 'npx fitout@latest install --hook';
+export const HOOK_COMMAND_DEV = 'fitout install --hook';
+
+function isCurrentHook(command: string | undefined): boolean {
+  if (!command) return false;
+  // Match both "npx fitout@latest install --hook" and "fitout install --hook"
+  return command.includes('fitout install --hook') || command.includes('fitout@latest install --hook');
+}
+
+function isLegacyHook(command: string | undefined): boolean {
+  if (!command) return false;
+  return command.includes('fitout apply --hook') || command.includes('fitout@latest apply --hook');
+}
+
 export function getFitoutHookStatus(settings: Record<string, unknown>): HookStatus {
   const hooks = settings.hooks as Record<string, unknown[]> | undefined;
   if (!hooks?.SessionStart) return 'none';
 
   const sessionStartHooks = hooks.SessionStart as Array<{ hooks?: Array<{ command?: string }> }>;
 
-  // Check for current command first
+  // Check for current command (matches both npx and dev versions)
   const hasCurrent = sessionStartHooks.some((matcher) =>
-    matcher.hooks?.some((hook) =>
-      hook.command?.includes('fitout install --hook')
-    )
+    matcher.hooks?.some((hook) => isCurrentHook(hook.command))
   );
   if (hasCurrent) return 'current';
 
   // Check for legacy command
   const hasLegacy = sessionStartHooks.some((matcher) =>
-    matcher.hooks?.some((hook) =>
-      hook.command?.includes('fitout apply --hook')
-    )
+    matcher.hooks?.some((hook) => isLegacyHook(hook.command))
   );
   if (hasLegacy) return 'outdated';
 
@@ -70,7 +81,7 @@ export function addFitoutHook(settings: Record<string, unknown>): ClaudeSettings
 
   result.hooks.SessionStart.push({
     hooks: [
-      { type: 'command', command: 'fitout install --hook' }
+      { type: 'command', command: HOOK_COMMAND_DEFAULT }
     ]
   });
 
@@ -87,8 +98,11 @@ export function upgradeFitoutHook(settings: Record<string, unknown>): ClaudeSett
   for (const matcher of result.hooks.SessionStart) {
     if (matcher.hooks) {
       for (const hook of matcher.hooks) {
-        if (hook.command?.includes('fitout apply --hook')) {
-          hook.command = hook.command.replace('fitout apply --hook', 'fitout install --hook');
+        if (isLegacyHook(hook.command)) {
+          // Replace both legacy patterns with the new default
+          hook.command = hook.command
+            .replace('fitout@latest apply --hook', HOOK_COMMAND_DEFAULT)
+            .replace('fitout apply --hook', HOOK_COMMAND_DEFAULT);
         }
       }
     }
@@ -148,13 +162,15 @@ Read \`~/.claude/settings.json\` and verify the Fitout hook exists:
     "SessionStart": [
       {
         "hooks": [
-          { "type": "command", "command": "fitout install --hook" }
+          { "type": "command", "command": "npx fitout@latest install --hook" }
         ]
       }
     ]
   }
 }
 \`\`\`
+
+Note: Developers may use \`fitout install --hook\` (without npx) for local development.
 
 If the hook is missing, suggest running \`fitout init\`.
 
