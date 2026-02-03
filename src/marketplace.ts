@@ -12,6 +12,14 @@ export interface AvailablePlugin {
   marketplace: string;
 }
 
+export interface InstalledMarketplace {
+  name: string;
+  source: 'github' | 'git' | string;
+  repo?: string;  // For github source
+  url?: string;   // For git source
+  installLocation: string;
+}
+
 interface MarketplacePlugin {
   name: string;
   version: string;
@@ -141,4 +149,18 @@ export function ensureMarketplaces(): EnsureMarketplacesResult {
   }
 
   return result;
+}
+
+/**
+ * List installed marketplaces using Claude CLI JSON output
+ */
+export function listInstalledMarketplaces(): InstalledMarketplace[] {
+  try {
+    const output = execFileSync('claude', ['plugin', 'marketplace', 'list', '--json'], {
+      encoding: 'utf-8',
+    });
+    return JSON.parse(output);
+  } catch {
+    return [];
+  }
 }

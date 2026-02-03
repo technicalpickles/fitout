@@ -1,12 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { listAvailablePlugins, getMarketplacesDir } from './marketplace.js';
+import { execFileSync } from 'node:child_process';
+import { listAvailablePlugins, getMarketplacesDir, listInstalledMarketplaces } from './marketplace.js';
 
 vi.mock('node:fs');
+vi.mock('node:child_process');
 
 const mockExistsSync = vi.mocked(existsSync);
 const mockReaddirSync = vi.mocked(readdirSync);
 const mockReadFileSync = vi.mocked(readFileSync);
+const mockExecFileSync = vi.mocked(execFileSync);
 
 describe('listAvailablePlugins', () => {
   beforeEach(() => {
@@ -140,5 +143,64 @@ describe('getMarketplacesDir', () => {
     expect(dir).toContain('.claude');
     expect(dir).toContain('plugins');
     expect(dir).toContain('marketplaces');
+  });
+});
+
+describe('listInstalledMarketplaces', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
+  it('returns parsed JSON from claude plugin marketplace list', () => {
+    mockExecFileSync.mockReturnValue(JSON.stringify([
+      {
+        name: 'my-marketplace',
+        source: 'github',
+        repo: 'owner/my-marketplace',
+        installLocation: '/home/user/.claude/plugins/marketplaces/my-marketplace',
+      },
+    ]));
+
+    const result = listInstalledMarketplaces();
+
+    expect(mockExecFileSync).toHaveBeenCalledWith(
+      'claude',
+      ['plugin', 'marketplace', 'list', '--json'],
+      expect.objectContaining({ encoding: 'utf-8' })
+    );
+    expect(result).toEqual([
+      {
+        name: 'my-marketplace',
+        source: 'github',
+        repo: 'owner/my-marketplace',
+        installLocation: '/home/user/.claude/plugins/marketplaces/my-marketplace',
+      },
+    ]);
+  });
+
+  it('handles git URL sources', () => {
+    mockExecFileSync.mockReturnValue(JSON.stringify([
+      {
+        name: 'git-marketplace',
+        source: 'git',
+        url: 'https://github.com/owner/repo.git',
+        installLocation: '/home/user/.claude/plugins/marketplaces/git-marketplace',
+      },
+    ]));
+
+    const result = listInstalledMarketplaces();
+
+    expect(result[0].source).toBe('git');
+    expect(result[0].url).toBe('https://github.com/owner/repo.git');
+  });
+
+  it('returns empty array on error', () => {
+    mockExecFileSync.mockImplementation(() => {
+      throw new Error('claude not found');
+    });
+
+    const result = listInstalledMarketplaces();
+
+    expect(result).toEqual([]);
   });
 });
