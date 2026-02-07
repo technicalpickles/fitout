@@ -7,6 +7,7 @@ import {
   getProjectConfigPath,
   readClaudeSettings,
   hasFitoutHook,
+  getFitoutHookStatus,
   hasFitoutSkill,
   hasDefaultProfile,
   hasProjectConfig,
@@ -139,14 +140,16 @@ program
 
     // Check current state
     const settings = readClaudeSettings(settingsPath);
-    const hookExists = hasFitoutHook(settings);
+    const hookStatus = getFitoutHookStatus(settings);
+    const hookExists = hookStatus !== 'none';
+    const hookOutdated = hookStatus === 'outdated';
     const skillExists = hasFitoutSkill();
     const profileExists = hasDefaultProfile(profilesDir);
     const configExists = hasProjectConfig(projectRoot);
 
     // Handle --hook-only mode
     if (options.hookOnly) {
-      if (hookExists) {
+      if (hookStatus === 'current') {
         console.log(`${symbols.present} Hook already installed`);
         process.exit(0);
       }
@@ -156,7 +159,11 @@ program
         createProfile: false,
         createSkill: false,
       });
-      console.log(`${symbols.present} SessionStart hook added to ${formatPath(settingsPath)}`);
+      if (result.hookUpgraded) {
+        console.log(`${symbols.present} SessionStart hook upgraded in ${formatPath(settingsPath)}`);
+      } else {
+        console.log(`${symbols.present} SessionStart hook added to ${formatPath(settingsPath)}`);
+      }
       console.log(colors.dim('  Restart Claude to activate'));
       process.exit(0);
     }
@@ -174,15 +181,20 @@ program
       });
 
       const created: string[] = [];
+      const upgraded: string[] = [];
       if (result.hookAdded) created.push('hook');
+      if (result.hookUpgraded) upgraded.push('hook');
       if (result.skillCreated) created.push('skill');
       if (result.profileCreated) created.push('profile');
       if (result.projectConfigCreated) created.push('project config');
 
-      if (created.length === 0) {
+      if (created.length === 0 && upgraded.length === 0) {
         console.log(`${symbols.present} Already initialized`);
       } else {
-        console.log(`${symbols.present} Created: ${created.join(', ')}`);
+        const parts: string[] = [];
+        if (created.length > 0) parts.push(`Created: ${created.join(', ')}`);
+        if (upgraded.length > 0) parts.push(`Upgraded: ${upgraded.join(', ')}`);
+        console.log(`${symbols.present} ${parts.join('. ')}`);
         console.log(colors.dim('  Restart Claude to activate'));
       }
       process.exit(0);
@@ -195,8 +207,11 @@ program
     console.log(colors.header('Global:'));
     let needsGlobalSetup = false;
 
-    if (hookExists) {
+    if (hookStatus === 'current') {
       console.log(`  ${symbols.present} SessionStart hook`);
+    } else if (hookStatus === 'outdated') {
+      console.log(`  ${symbols.outdated} SessionStart hook ${colors.dim('(outdated)')}`);
+      needsGlobalSetup = true;
     } else {
       console.log(`  ${symbols.missing} SessionStart hook ${colors.dim('(missing)')}`);
       needsGlobalSetup = true;
@@ -218,11 +233,15 @@ program
 
     // Set up global components if needed
     let hookAdded = false;
+    let hookUpgraded = false;
     let skillCreated = false;
     let globalConfigCreated = false;
     if (needsGlobalSetup) {
       console.log('');
-      const setupGlobal = await confirm('Set up missing global components?');
+      const promptText = hookOutdated
+        ? 'Set up missing/outdated global components?'
+        : 'Set up missing global components?';
+      const setupGlobal = await confirm(promptText);
       if (setupGlobal) {
         const result = runInit({
           settingsPath,
@@ -231,8 +250,10 @@ program
           createSkill: !skillExists,
         });
         hookAdded = result.hookAdded;
+        hookUpgraded = result.hookUpgraded;
         skillCreated = result.skillCreated;
         if (hookAdded) console.log(`  ${symbols.present} Hook installed`);
+        if (hookUpgraded) console.log(`  ${symbols.present} Hook upgraded`);
         if (skillCreated) console.log(`  ${symbols.present} Skill installed`);
       }
     }
@@ -320,7 +341,7 @@ program
 
     // Summary
     console.log('');
-    const anythingCreated = hookAdded || skillCreated || globalConfigCreated || profileCreated || projectConfigCreated;
+    const anythingCreated = hookAdded || hookUpgraded || skillCreated || globalConfigCreated || profileCreated || projectConfigCreated;
     if (!anythingCreated && hookExists && skillExists && profileExists && configExists) {
       console.log(`${symbols.present} ${colors.success('Already initialized')}`);
     } else if (anythingCreated) {
