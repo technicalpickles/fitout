@@ -1,4 +1,7 @@
-import { execFileSync } from 'node:child_process';
+import { execFileSync, execSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 export interface InstalledPlugin {
   id: string;
@@ -17,10 +20,20 @@ export function parsePluginList(jsonOutput: string): InstalledPlugin[] {
 }
 
 export function listPlugins(): InstalledPlugin[] {
-  const output = execFileSync('claude', ['plugin', 'list', '--json'], {
-    encoding: 'utf-8',
-  });
-  return parsePluginList(output);
+  // Use file redirection to work around Claude CLI stdout truncation at 64KB
+  // when piped to a non-tty. File redirection captures the full output.
+  const tmpDir = mkdtempSync(join(tmpdir(), 'fitout-'));
+  const tmpFile = join(tmpDir, 'plugins.json');
+  try {
+    execSync(`claude plugin list --json > "${tmpFile}"`, {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    const output = readFileSync(tmpFile, 'utf-8');
+    return parsePluginList(output);
+  } finally {
+    rmSync(tmpDir, { recursive: true, force: true });
+  }
 }
 
 export function installPlugin(pluginId: string): void {
