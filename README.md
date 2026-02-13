@@ -17,7 +17,7 @@ Fitout ensures your actual runtime state matches your declared configuration.
 
 1. Declare desired plugins in `.claude/fitout.toml`
 2. Run `fitout status` to see the diff
-3. Run `fitout apply` to sync
+3. Run `fitout install` to sync
 
 ## Installation
 
@@ -71,7 +71,7 @@ Context: /path/to/project
 Install missing plugins:
 
 ```bash
-fitout apply
+fitout install
 ```
 
 ## Commands
@@ -86,13 +86,13 @@ Shows the diff between desired and installed plugins.
 
 Exit code is `1` if any plugins are missing, `0` otherwise.
 
-### `fitout apply`
+### `fitout install`
 
 Installs missing plugins to sync with config.
 
 ```bash
-fitout apply           # Install missing plugins
-fitout apply --dry-run # Preview what would be installed
+fitout install           # Install missing plugins
+fitout install --dry-run # Preview what would be installed
 ```
 
 ## Profiles

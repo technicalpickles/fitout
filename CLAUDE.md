@@ -40,6 +40,14 @@ Project config lives at `.claude/fitout.toml`:
 
 ```toml
 plugins = [
-  "plugin-name@registry",
+  "plugin-name@marketplace",
+]
+```
+
+Global config lives at `~/.config/fitout/config.toml`:
+
+```toml
+marketplaces = [
+  "https://github.com/owner/marketplace-repo",
 ]
 ```

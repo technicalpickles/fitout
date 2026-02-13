@@ -7,7 +7,7 @@ import { getGlobalConfigDir, getGlobalConfigPath } from './paths.js';
 export { getGlobalConfigDir, getGlobalConfigPath } from './paths.js';
 
 export interface GlobalConfig {
-  marketplaces?: Record<string, string>;
+  marketplaces?: string[];
 }
 
 export function readGlobalConfig(): GlobalConfig {
@@ -35,36 +35,31 @@ export function hasGlobalConfig(): boolean {
   return existsSync(getGlobalConfigPath());
 }
 
-export function getConfiguredMarketplaces(): Record<string, string> {
+export function getConfiguredMarketplaces(): string[] {
   const config = readGlobalConfig();
-  return config.marketplaces || {};
+  return config.marketplaces || [];
 }
 
-export function getGlobalConfigContent(marketplaces?: Record<string, string>): string {
-  if (!marketplaces || Object.keys(marketplaces).length === 0) {
-    return `# Fettle global config
-# Marketplaces and their sources
+export function getGlobalConfigContent(marketplaces?: string[]): string {
+  if (!marketplaces || marketplaces.length === 0) {
+    return `# Fitout global config
+# Marketplace sources to ensure are installed
 
-[marketplaces]
-# pickled-claude-plugins = "https://github.com/technicalpickles/pickled-claude-plugins"
+marketplaces = []
 `;
   }
 
-  const lines = [
-    '# Fettle global config',
-    '# Marketplaces and their sources',
-    '',
-    '[marketplaces]',
-  ];
+  const quotedSources = marketplaces.map((s) => `  "${s}"`).join(',\n');
+  return `# Fitout global config
+# Marketplace sources to ensure are installed
 
-  for (const [name, source] of Object.entries(marketplaces)) {
-    lines.push(`${name} = "${source}"`);
-  }
-
-  return lines.join('\n') + '\n';
+marketplaces = [
+${quotedSources},
+]
+`;
 }
 
-export function createGlobalConfig(marketplaces?: Record<string, string>): boolean {
+export function createGlobalConfig(marketplaces?: string[]): boolean {
   const configPath = getGlobalConfigPath();
 
   if (existsSync(configPath)) {

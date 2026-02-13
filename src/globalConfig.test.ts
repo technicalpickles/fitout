@@ -42,24 +42,23 @@ describe('getGlobalConfigPath', () => {
 describe('getGlobalConfigContent', () => {
   it('generates empty config when no marketplaces specified', () => {
     const content = getGlobalConfigContent();
-    expect(content).toContain('[marketplaces]');
-    expect(content).toContain('# pickled-claude-plugins');
+    expect(content).toContain('marketplaces = []');
   });
 
-  it('generates config with marketplaces when specified', () => {
-    const content = getGlobalConfigContent({
-      'my-marketplace': 'https://example.com/marketplace',
-    });
-    expect(content).toContain('[marketplaces]');
-    expect(content).toContain('my-marketplace = "https://example.com/marketplace"');
+  it('generates config with marketplaces array when specified', () => {
+    const content = getGlobalConfigContent([
+      'https://github.com/owner/marketplace',
+    ]);
+    expect(content).toContain('marketplaces = [');
+    expect(content).toContain('"https://github.com/owner/marketplace"');
   });
 
   it('handles multiple marketplaces', () => {
-    const content = getGlobalConfigContent({
-      'marketplace-a': 'https://a.com',
-      'marketplace-b': 'https://b.com',
-    });
-    expect(content).toContain('marketplace-a = "https://a.com"');
-    expect(content).toContain('marketplace-b = "https://b.com"');
+    const content = getGlobalConfigContent([
+      'https://github.com/a/repo',
+      'https://github.com/b/repo',
+    ]);
+    expect(content).toContain('"https://github.com/a/repo"');
+    expect(content).toContain('"https://github.com/b/repo"');
   });
 });
