@@ -11,6 +11,16 @@ export interface InstalledPlugin {
   projectPath?: string;
 }
 
+// Claude CLI sets CLAUDECODE=1 to detect nested sessions and refuses to run
+// if it's present. Fitout calls `claude plugin list/install` from SessionStart
+// hooks, which inherit this env var. These are safe metadata/management commands,
+// not nested interactive sessions, so we strip the variable.
+export function claudeEnv(): NodeJS.ProcessEnv {
+  const env = { ...process.env };
+  delete env.CLAUDECODE;
+  return env;
+}
+
 export function parsePluginList(jsonOutput: string): InstalledPlugin[] {
   const parsed = JSON.parse(jsonOutput);
   if (!Array.isArray(parsed)) {
@@ -27,6 +37,7 @@ export function listPlugins(): InstalledPlugin[] {
   try {
     execSync(`claude plugin list --json > "${tmpFile}"`, {
       encoding: 'utf-8',
+      env: claudeEnv(),
       stdio: ['pipe', 'pipe', 'pipe'],
     });
     const output = readFileSync(tmpFile, 'utf-8');
@@ -39,6 +50,7 @@ export function listPlugins(): InstalledPlugin[] {
 export function installPlugin(pluginId: string): void {
   execFileSync('claude', ['plugin', 'install', pluginId, '--scope', 'local'], {
     encoding: 'utf-8',
+    env: claudeEnv(),
     stdio: 'inherit',
   });
 }
