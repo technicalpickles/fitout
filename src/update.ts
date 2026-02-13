@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { InstalledPlugin } from './claude.js';
+import { InstalledPlugin, claudeEnv } from './claude.js';
 import { AvailablePlugin } from './marketplace.js';
 
 export interface OutdatedPlugin {
@@ -72,6 +72,7 @@ export function findOutdatedPlugins(
 export function updatePlugin(pluginId: string, scope: 'local' | 'user' = 'local'): void {
   execFileSync('claude', ['plugin', 'update', pluginId, '--scope', scope], {
     encoding: 'utf-8',
+    env: claudeEnv(),
     stdio: 'inherit',
   });
 }

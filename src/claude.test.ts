@@ -1,5 +1,30 @@
 import { describe, it, expect, vi } from 'vitest';
-import { parsePluginList, InstalledPlugin } from './claude.js';
+import { parsePluginList, InstalledPlugin, claudeEnv } from './claude.js';
+
+describe('claudeEnv', () => {
+  it('strips CLAUDECODE from the environment', () => {
+    const original = process.env.CLAUDECODE;
+    process.env.CLAUDECODE = '1';
+    try {
+      const env = claudeEnv();
+      expect(env.CLAUDECODE).toBeUndefined();
+      // Other env vars are preserved
+      expect(env.PATH).toBe(process.env.PATH);
+    } finally {
+      if (original !== undefined) {
+        process.env.CLAUDECODE = original;
+      } else {
+        delete process.env.CLAUDECODE;
+      }
+    }
+  });
+
+  it('returns a copy, not the original process.env', () => {
+    const env = claudeEnv();
+    env.SOME_TEST_VAR = 'test';
+    expect(process.env.SOME_TEST_VAR).toBeUndefined();
+  });
+});
 
 describe('parsePluginList', () => {
   it('parses JSON plugin list output', () => {
