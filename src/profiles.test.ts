@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { loadProfile, resolveProfiles } from './profiles.js';
+import { loadProfile, listProfiles, resolveProfiles } from './profiles.js';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 
 vi.mock('node:fs');
@@ -54,6 +54,58 @@ plugins = ["plugin-a@registry"]
       plugins: ['plugin-a@registry'],
       description: null,
     });
+  });
+});
+
+describe('listProfiles', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
+  it('lists all profiles sorted alphabetically', () => {
+    vi.mocked(readdirSync).mockReturnValue(
+      ['typescript.toml', 'default.toml', 'browsing.toml'] as any
+    );
+    vi.mocked(existsSync).mockReturnValue(true);
+    vi.mocked(readFileSync).mockImplementation((path) => {
+      const p = String(path);
+      if (p.includes('default')) return 'description = "Baseline plugins"\nplugins = ["a@r", "b@r"]';
+      if (p.includes('browsing')) return 'description = "Browser automation"\nplugins = ["c@r"]';
+      if (p.includes('typescript')) return 'plugins = ["d@r"]';
+      return '';
+    });
+
+    const result = listProfiles('/profiles');
+
+    expect(result).toEqual([
+      { name: 'browsing', description: 'Browser automation', plugins: ['c@r'] },
+      { name: 'default', description: 'Baseline plugins', plugins: ['a@r', 'b@r'] },
+      { name: 'typescript', description: null, plugins: ['d@r'] },
+    ]);
+  });
+
+  it('returns empty array when profiles dir does not exist', () => {
+    vi.mocked(readdirSync).mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
+
+    const result = listProfiles('/profiles');
+
+    expect(result).toEqual([]);
+  });
+
+  it('skips non-toml files', () => {
+    vi.mocked(readdirSync).mockReturnValue(
+      ['readme.md', 'profile.toml'] as any
+    );
+    vi.mocked(existsSync).mockReturnValue(true);
+    vi.mocked(readFileSync).mockReturnValue('description = "Test"\nplugins = ["a@r"]');
+
+    const result = listProfiles('/profiles');
+
+    expect(result).toEqual([
+      { name: 'profile', description: 'Test', plugins: ['a@r'] },
+    ]);
   });
 });
 

@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse } from 'smol-toml';
 import { FettleConfig } from './config.js';
@@ -45,6 +45,39 @@ export function loadProfile(profilesDir: string, name: string): ProfileData | nu
   const description = typeof parsed.description === 'string' ? parsed.description : null;
 
   return { plugins, description };
+}
+
+export interface ProfileInfo {
+  name: string;
+  description: string | null;
+  plugins: string[];
+}
+
+export function listProfiles(profilesDir: string): ProfileInfo[] {
+  let files: string[];
+  try {
+    files = readdirSync(profilesDir) as unknown as string[];
+  } catch {
+    return [];
+  }
+
+  const profiles: ProfileInfo[] = [];
+
+  for (const file of files) {
+    if (!file.endsWith('.toml')) continue;
+    const name = file.replace(/\.toml$/, '');
+    const profile = loadProfile(profilesDir, name);
+    if (profile) {
+      profiles.push({
+        name,
+        description: profile.description,
+        plugins: profile.plugins,
+      });
+    }
+  }
+
+  profiles.sort((a, b) => a.name.localeCompare(b.name));
+  return profiles;
 }
 
 export function resolveProfiles(
