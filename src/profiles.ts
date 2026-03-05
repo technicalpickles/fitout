@@ -23,7 +23,12 @@ export interface ProfileResolutionResult {
   constraintOverrides: ConstraintOverride[];
 }
 
-export function loadProfile(profilesDir: string, name: string): string[] | null {
+export interface ProfileData {
+  plugins: string[];
+  description: string | null;
+}
+
+export function loadProfile(profilesDir: string, name: string): ProfileData | null {
   const profilePath = join(profilesDir, `${name}.toml`);
 
   if (!existsSync(profilePath)) {
@@ -37,7 +42,9 @@ export function loadProfile(profilesDir: string, name: string): string[] | null 
     ? parsed.plugins.filter((p): p is string => typeof p === 'string')
     : [];
 
-  return plugins;
+  const description = typeof parsed.description === 'string' ? parsed.description : null;
+
+  return { plugins, description };
 }
 
 export function resolveProfiles(
@@ -104,18 +111,18 @@ export function resolveProfiles(
   };
 
   // 1. Auto-include default if exists
-  const defaultPlugins = loadProfile(profilesDir, 'default');
-  if (defaultPlugins !== null) {
-    addPlugins(defaultPlugins, 'default');
+  const defaultProfile = loadProfile(profilesDir, 'default');
+  if (defaultProfile !== null) {
+    addPlugins(defaultProfile.plugins, 'default');
   }
 
   // 2. Load explicit profiles
   for (const profileName of config.profiles) {
-    const profilePlugins = loadProfile(profilesDir, profileName);
-    if (profilePlugins === null) {
+    const profile = loadProfile(profilesDir, profileName);
+    if (profile === null) {
       errors.push(`Profile not found: ${profileName}`);
     } else {
-      addPlugins(profilePlugins, profileName);
+      addPlugins(profile.plugins, profileName);
     }
   }
 
