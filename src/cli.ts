@@ -16,6 +16,7 @@ import {
 } from './init.js';
 import { getClaudeSettingsPath, getFitoutSkillPath } from './paths.js';
 import { getProfilesDir, resolveProjectRoot } from './context.js';
+import { listProfiles } from './profiles.js';
 import { confirm, input } from './prompt.js';
 import { colors, symbols, formatPath } from './colors.js';
 import { hasGlobalConfig, createGlobalConfig, getGlobalConfigPath, getGlobalConfigContent } from './globalConfig.js';
@@ -106,6 +107,38 @@ program
       console.log(
         `Updated ${result.pluginsToUpdate.length} plugin${result.pluginsToUpdate.length > 1 ? 's' : ''}. Restart Claude to apply changes.`
       );
+    }
+
+    process.exit(0);
+  });
+
+program
+  .command('profiles')
+  .description('List available profiles')
+  .option('--json', 'Output as JSON')
+  .action((options) => {
+    const profilesDir = getProfilesDir();
+    const profiles = listProfiles(profilesDir);
+
+    if (options.json) {
+      console.log(JSON.stringify(profiles, null, 2));
+      process.exit(0);
+    }
+
+    if (profiles.length === 0) {
+      console.log('No profiles found.');
+      console.log(colors.dim(`Create one at ${formatPath(profilesDir)}/<name>.toml`));
+      process.exit(0);
+    }
+
+    const maxName = Math.max(...profiles.map(p => p.name.length));
+
+    for (const profile of profiles) {
+      const name = profile.name.padEnd(maxName + 2);
+      const desc = profile.description || colors.dim('(no description)');
+      const count = profile.plugins.length;
+      const countStr = colors.dim(`(${count} plugin${count !== 1 ? 's' : ''})`);
+      console.log(`  ${name}${desc}  ${countStr}`);
     }
 
     process.exit(0);

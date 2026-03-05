@@ -4,7 +4,7 @@ import { resolveProjectRoot } from './context.js';
 import { listAvailablePlugins } from './marketplace.js';
 import { findOutdatedPlugins } from './update.js';
 
-const COMMANDS = ['status', 'install', 'update', 'marketplace', 'init', 'completion'];
+const COMMANDS = ['status', 'install', 'update', 'marketplace', 'init', 'profiles', 'completion'];
 const MARKETPLACE_SUBCOMMANDS = ['refresh'];
 const COMPLETION_SUBCOMMANDS = ['install', 'uninstall'];
 
@@ -13,6 +13,7 @@ const FLAGS: Record<string, string[]> = {
   install: ['--dry-run', '--hook'],
   update: ['--refresh', '--dry-run'],
   init: ['-y', '--yes', '--hook-only'],
+  profiles: ['--json'],
 };
 
 /**
