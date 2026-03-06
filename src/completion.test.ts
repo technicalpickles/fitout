@@ -72,7 +72,7 @@ describe('completion', () => {
       const { handleCompletion } = await import('./completion.js');
       expect(handleCompletion()).toBe(true);
       expect(tabtab.log).toHaveBeenCalledWith(
-        ['status', 'install', 'update', 'marketplace', 'init', 'completion'],
+        ['status', 'install', 'update', 'marketplace', 'init', 'profiles', 'completion'],
         'bash',
         console.log
       );

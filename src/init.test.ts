@@ -569,7 +569,7 @@ describe('createFitoutSkill', () => {
     const content = readFileSync(skillPath, 'utf-8');
     expect(content).toContain('name: fitout');
     expect(content).toContain('description:');
-    expect(content).toContain('Fitout Diagnostic');
+    expect(content).toContain('Fitout Plugin Manager');
   });
 
   it('does not overwrite existing skill', () => {

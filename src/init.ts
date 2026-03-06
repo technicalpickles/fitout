@@ -146,13 +146,15 @@ name: fitout
 description: Use when checking Fitout plugin manager setup, diagnosing plugin issues, or validating that configured plugins are properly installed. Invoke when users ask about plugin status, mention fitout, or when plugin-related problems are suspected.
 ---
 
-# Fitout Diagnostic
+# Fitout Plugin Manager
+
+## Mode 1: Diagnostic
 
 Check that the Fitout plugin manager is properly configured and all plugins are in sync.
 
-## Diagnostic Steps
+### Diagnostic Steps
 
-### 1. Check Hook Installation
+#### 1. Check Hook Installation
 
 Read \`~/.claude/settings.json\` and verify the Fitout hook exists:
 
@@ -174,14 +176,14 @@ Note: Developers may use \`fitout install --hook\` (without npx) for local devel
 
 If the hook is missing, suggest running \`fitout init\`.
 
-### 2. Check Plugin Status
+#### 2. Check Plugin Status
 
 Run \`fitout status\` in the current project directory to check:
 - Config file exists and parses correctly
 - Profiles resolve without errors
 - Which plugins are present, missing, or extra
 
-### 3. Report Summary
+#### 3. Report Summary
 
 Provide a clear diagnostic summary:
 - **Hook:** Installed / Missing
@@ -190,10 +192,61 @@ Provide a clear diagnostic summary:
 - **Plugins:** X present, Y missing, Z extra
 
 If there are issues, suggest the appropriate fix:
-- Missing hook → \`fitout init --hook-only\`
-- Missing config → \`fitout init\`
-- Missing plugins → \`fitout install\`
-- Outdated plugins → \`fitout update\`
+- Missing hook: \`fitout init --hook-only\`
+- Missing config: \`fitout init\`
+- Missing plugins: \`fitout install\`
+- Outdated plugins: \`fitout update\`
+
+## Mode 2: Project Setup
+
+Analyze the current project and recommend which profiles to enable.
+
+### Setup Steps
+
+#### 1. Discover Available Profiles
+
+Run: \`fitout profiles --json\`
+
+This returns an array of profiles with names, descriptions, and plugin lists.
+
+#### 2. Scan Codebase for Signals
+
+Look for these files in the project root:
+- \`tsconfig.json\` or \`tsconfig.*.json\`: suggests **typescript** profile
+- \`pyproject.toml\` or \`setup.py\` or \`requirements.txt\`: suggests **python** profile
+- \`Cargo.toml\`: suggests **rust** profile
+- \`go.mod\`: suggests a Go profile (if one exists)
+- Any web project signals: suggests **browsing** profile if available
+
+#### 3. Present Recommendations
+
+Use AskUserQuestion with multiSelect to let the user choose profiles:
+
+\`\`\`
+Analyzing codebase...
+
+Found: tsconfig.json, package.json
+
+Available profiles:
+(Show each profile with description, mark recommended ones)
+\`\`\`
+
+Always include **default** as pre-selected.
+Pre-select profiles that match detected signals.
+
+#### 4. Write Configuration
+
+Create or update \`.claude/fitout.toml\` with selected profiles:
+
+\`\`\`toml
+profiles = ["default", "typescript"]
+
+plugins = [
+  # Add project-specific plugins here
+]
+\`\`\`
+
+Then run \`fitout install\` to sync.
 `;
 
   writeFileSync(skillPath, content);
@@ -235,7 +288,7 @@ export function createDefaultProfile(profilePath: string): boolean {
   mkdirSync(dirname(profilePath), { recursive: true });
 
   const content = `# Fitout profile - plugins listed here apply to all projects
-# Add plugins in the format: "plugin-name@registry"
+description = "Baseline plugins for all projects"
 
 plugins = [
   # "example-plugin@marketplace",

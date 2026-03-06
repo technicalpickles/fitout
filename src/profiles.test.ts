@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { loadProfile, resolveProfiles } from './profiles.js';
-import { existsSync, readFileSync } from 'node:fs';
+import { loadProfile, listProfiles, resolveProfiles } from './profiles.js';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 
 vi.mock('node:fs');
 
@@ -9,15 +9,19 @@ describe('loadProfile', () => {
     vi.resetAllMocks();
   });
 
-  it('loads existing profile and returns plugins', () => {
+  it('loads existing profile and returns plugins and description', () => {
     vi.mocked(existsSync).mockReturnValue(true);
     vi.mocked(readFileSync).mockReturnValue(`
+description = "Backend services and APIs"
 plugins = ["plugin-a@registry", "plugin-b@registry"]
 `);
 
     const result = loadProfile('/profiles', 'backend');
 
-    expect(result).toEqual(['plugin-a@registry', 'plugin-b@registry']);
+    expect(result).toEqual({
+      plugins: ['plugin-a@registry', 'plugin-b@registry'],
+      description: 'Backend services and APIs',
+    });
     expect(readFileSync).toHaveBeenCalledWith('/profiles/backend.toml', 'utf-8');
   });
 
@@ -29,13 +33,79 @@ plugins = ["plugin-a@registry", "plugin-b@registry"]
     expect(result).toBeNull();
   });
 
-  it('returns empty array for profile with no plugins', () => {
+  it('returns empty plugins and null description for minimal profile', () => {
     vi.mocked(existsSync).mockReturnValue(true);
     vi.mocked(readFileSync).mockReturnValue(`# empty profile`);
 
     const result = loadProfile('/profiles', 'empty');
 
+    expect(result).toEqual({ plugins: [], description: null });
+  });
+
+  it('returns null description when description field is missing', () => {
+    vi.mocked(existsSync).mockReturnValue(true);
+    vi.mocked(readFileSync).mockReturnValue(`
+plugins = ["plugin-a@registry"]
+`);
+
+    const result = loadProfile('/profiles', 'no-desc');
+
+    expect(result).toEqual({
+      plugins: ['plugin-a@registry'],
+      description: null,
+    });
+  });
+});
+
+describe('listProfiles', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
+  it('lists all profiles sorted alphabetically', () => {
+    vi.mocked(readdirSync).mockReturnValue(
+      ['typescript.toml', 'default.toml', 'browsing.toml'] as any
+    );
+    vi.mocked(existsSync).mockReturnValue(true);
+    vi.mocked(readFileSync).mockImplementation((path) => {
+      const p = String(path);
+      if (p.includes('default')) return 'description = "Baseline plugins"\nplugins = ["a@r", "b@r"]';
+      if (p.includes('browsing')) return 'description = "Browser automation"\nplugins = ["c@r"]';
+      if (p.includes('typescript')) return 'plugins = ["d@r"]';
+      return '';
+    });
+
+    const result = listProfiles('/profiles');
+
+    expect(result).toEqual([
+      { name: 'browsing', description: 'Browser automation', plugins: ['c@r'] },
+      { name: 'default', description: 'Baseline plugins', plugins: ['a@r', 'b@r'] },
+      { name: 'typescript', description: null, plugins: ['d@r'] },
+    ]);
+  });
+
+  it('returns empty array when profiles dir does not exist', () => {
+    vi.mocked(readdirSync).mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
+
+    const result = listProfiles('/profiles');
+
     expect(result).toEqual([]);
+  });
+
+  it('skips non-toml files', () => {
+    vi.mocked(readdirSync).mockReturnValue(
+      ['readme.md', 'profile.toml'] as any
+    );
+    vi.mocked(existsSync).mockReturnValue(true);
+    vi.mocked(readFileSync).mockReturnValue('description = "Test"\nplugins = ["a@r"]');
+
+    const result = listProfiles('/profiles');
+
+    expect(result).toEqual([
+      { name: 'profile', description: 'Test', plugins: ['a@r'] },
+    ]);
   });
 });
 

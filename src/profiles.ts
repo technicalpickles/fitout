@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse } from 'smol-toml';
 import { FettleConfig } from './config.js';
@@ -23,7 +23,12 @@ export interface ProfileResolutionResult {
   constraintOverrides: ConstraintOverride[];
 }
 
-export function loadProfile(profilesDir: string, name: string): string[] | null {
+export interface ProfileData {
+  plugins: string[];
+  description: string | null;
+}
+
+export function loadProfile(profilesDir: string, name: string): ProfileData | null {
   const profilePath = join(profilesDir, `${name}.toml`);
 
   if (!existsSync(profilePath)) {
@@ -37,7 +42,42 @@ export function loadProfile(profilesDir: string, name: string): string[] | null 
     ? parsed.plugins.filter((p): p is string => typeof p === 'string')
     : [];
 
-  return plugins;
+  const description = typeof parsed.description === 'string' ? parsed.description : null;
+
+  return { plugins, description };
+}
+
+export interface ProfileInfo {
+  name: string;
+  description: string | null;
+  plugins: string[];
+}
+
+export function listProfiles(profilesDir: string): ProfileInfo[] {
+  let files: string[];
+  try {
+    files = readdirSync(profilesDir) as unknown as string[];
+  } catch {
+    return [];
+  }
+
+  const profiles: ProfileInfo[] = [];
+
+  for (const file of files) {
+    if (!file.endsWith('.toml')) continue;
+    const name = file.replace(/\.toml$/, '');
+    const profile = loadProfile(profilesDir, name);
+    if (profile) {
+      profiles.push({
+        name,
+        description: profile.description,
+        plugins: profile.plugins,
+      });
+    }
+  }
+
+  profiles.sort((a, b) => a.name.localeCompare(b.name));
+  return profiles;
 }
 
 export function resolveProfiles(
@@ -104,18 +144,18 @@ export function resolveProfiles(
   };
 
   // 1. Auto-include default if exists
-  const defaultPlugins = loadProfile(profilesDir, 'default');
-  if (defaultPlugins !== null) {
-    addPlugins(defaultPlugins, 'default');
+  const defaultProfile = loadProfile(profilesDir, 'default');
+  if (defaultProfile !== null) {
+    addPlugins(defaultProfile.plugins, 'default');
   }
 
   // 2. Load explicit profiles
   for (const profileName of config.profiles) {
-    const profilePlugins = loadProfile(profilesDir, profileName);
-    if (profilePlugins === null) {
+    const profile = loadProfile(profilesDir, profileName);
+    if (profile === null) {
       errors.push(`Profile not found: ${profileName}`);
     } else {
-      addPlugins(profilePlugins, profileName);
+      addPlugins(profile.plugins, profileName);
     }
   }
 
