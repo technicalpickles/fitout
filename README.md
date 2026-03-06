@@ -95,6 +95,15 @@ fitout install           # Install missing plugins
 fitout install --dry-run # Preview what would be installed
 ```
 
+### `fitout profiles`
+
+Lists available profiles with descriptions and plugin counts.
+
+```bash
+fitout profiles          # Table output
+fitout profiles --json   # JSON for scripting
+```
+
 ## Profiles
 
 Share plugin sets across projects using profiles.
@@ -106,6 +115,8 @@ Create profiles at `~/.config/fitout/profiles/`:
 ```toml
 # ~/.config/fitout/profiles/default.toml
 # Auto-included in every project (silent if missing)
+description = "Baseline plugins for all projects"
+
 plugins = [
   "superpowers@superpowers-marketplace",
 ]
@@ -113,6 +124,8 @@ plugins = [
 
 ```toml
 # ~/.config/fitout/profiles/backend.toml
+description = "Backend services and APIs"
+
 plugins = [
   "database-tools@some-registry",
   "api-helpers@some-registry",
@@ -164,6 +177,9 @@ plugins = [
 ### Profile Config (`~/.config/fitout/profiles/<name>.toml`)
 
 ```toml
+# Optional: human-readable description (shown by fitout profiles)
+description = "What this profile provides"
+
 # Plugins provided by this profile
 plugins = [
   "plugin-name@registry",
