@@ -1,7 +1,11 @@
 #!/usr/bin/env node
+import { createRequire } from 'node:module';
 import { program } from 'commander';
 import { runStatus } from './status.js';
 import { runInstall } from './install.js';
+
+const require = createRequire(import.meta.url);
+const { version } = require('../package.json');
 import {
   runInit,
   getProjectConfigPath,
@@ -34,7 +38,7 @@ if (handleCompletion()) {
 program
   .name('fitout')
   .description('Context-aware plugin manager for Claude Code')
-  .version('0.1.0');
+  .version(version);
 
 program
   .command('status')
